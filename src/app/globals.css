@@ -1,26 +1,229 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-noto-lao), var(--font-noto-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #1e293b;
+  --destructive: #ef4444;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #3b82f6;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-noto-lao), var(--font-noto-sans), system-ui, -apple-system, sans-serif;
+  }
+
+  [data-sonner-toaster],
+  [data-sonner-toast] {
+    font-family: var(--font-noto-lao), var(--font-noto-sans), system-ui, sans-serif !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* TipTap Rich Text styles (applies both inside editor AND in detail/read-only views) */
+.tiptap-content,
+.tiptap-content .ProseMirror {
+  outline: none;
+  font-family: inherit;
 }
+
+.tiptap-content p,
+.tiptap-content .ProseMirror p {
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.65;
+}
+
+.tiptap-content h1,
+.tiptap-content .ProseMirror h1 {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin-top: 0.85rem !important;
+  margin-bottom: 0.4rem !important;
+  color: #0f172a !important;
+}
+
+.tiptap-content h2,
+.tiptap-content .ProseMirror h2 {
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.35rem !important;
+  color: #0f172a !important;
+}
+
+.tiptap-content h3,
+.tiptap-content .ProseMirror h3 {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  margin-top: 0.6rem !important;
+  margin-bottom: 0.25rem !important;
+  color: #0f172a !important;
+}
+
+.tiptap-content ul,
+.tiptap-content .ProseMirror ul {
+  list-style: disc inside !important;
+  list-style-type: disc !important;
+  list-style-position: inside !important;
+  padding-left: 0.5rem !important;
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.tiptap-content ol,
+.tiptap-content .ProseMirror ol {
+  list-style: decimal inside !important;
+  list-style-type: decimal !important;
+  list-style-position: inside !important;
+  padding-left: 0.5rem !important;
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.tiptap-content li,
+.tiptap-content .ProseMirror li {
+  margin-top: 0.2rem !important;
+  margin-bottom: 0.2rem !important;
+  display: list-item !important;
+  list-style-type: inherit !important;
+  list-style-position: inside !important;
+}
+
+.tiptap-content li > p,
+.tiptap-content .ProseMirror li > p {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+.tiptap-content strong,
+.tiptap-content b,
+.tiptap-content .ProseMirror strong,
+.tiptap-content .ProseMirror b {
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+.tiptap-content em,
+.tiptap-content i,
+.tiptap-content .ProseMirror em,
+.tiptap-content .ProseMirror i {
+  font-style: italic !important;
+}
+
+.tiptap-content s,
+.tiptap-content strike,
+.tiptap-content .ProseMirror s,
+.tiptap-content .ProseMirror strike {
+  text-decoration: line-through !important;
+}
+
+.tiptap-content blockquote,
+.tiptap-content .ProseMirror blockquote {
+  border-left: 3px solid #2563eb !important;
+  padding-left: 0.85rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  color: #334155 !important;
+  font-style: italic !important;
+  background-color: #f8fafc !important;
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+}
+
+.tiptap-content hr,
+.tiptap-content .ProseMirror hr {
+  border: none !important;
+  border-top: 1px solid #e2e8f0 !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.tiptap-content code,
+.tiptap-content .ProseMirror code {
+  background-color: #f1f5f9 !important;
+  padding: 0.15rem 0.4rem !important;
+  border-radius: 0.375rem !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.85em !important;
+  color: #0f172a !important;
+}
+
+.tiptap-content pre,
+.tiptap-content .ProseMirror pre {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 0.75rem !important;
+  border-radius: 0.5rem !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.85em !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  overflow-x: auto !important;
+}
+
