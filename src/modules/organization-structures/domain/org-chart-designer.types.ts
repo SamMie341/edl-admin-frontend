@@ -8,12 +8,53 @@ export interface OrgChartPersonNode {
   photoUrl?: string; // Data URL or Image URL
 }
 
+export interface OrgChartTier {
+  id: string;
+  tierTitleLao?: string;
+  tierTitleEn?: string;
+  nodes: OrgChartPersonNode[];
+}
+
 export interface OrgChartStructure {
   id?: string;
   chartTitleLao: string;
   chartTitleEn: string;
-  leader: OrgChartPersonNode;
-  members: OrgChartPersonNode[];
+  tiers?: OrgChartTier[];
+  leader?: OrgChartPersonNode;
+  members?: OrgChartPersonNode[];
+}
+
+export function normalizeChartTiers(chart: Partial<OrgChartStructure>): OrgChartTier[] {
+  if (chart.tiers && chart.tiers.length > 0) {
+    return chart.tiers;
+  }
+  // Otherwise convert legacy leader + members to 2 tiers:
+  const tiers: OrgChartTier[] = [];
+  if (chart.leader) {
+    tiers.push({
+      id: 'tier-1',
+      tierTitleLao: chart.chartTitleLao || 'ປະທານ / ຫົວໜ້າ',
+      tierTitleEn: chart.chartTitleEn || 'CHAIRMAN',
+      nodes: [chart.leader],
+    });
+  }
+  if (chart.members && chart.members.length > 0) {
+    tiers.push({
+      id: 'tier-2',
+      tierTitleLao: 'ກຳມະການ / ສະມາຊິກ',
+      tierTitleEn: 'COMMITTEE / MEMBERS',
+      nodes: chart.members,
+    });
+  }
+  if (tiers.length === 0) {
+    tiers.push({
+      id: 'tier-1',
+      tierTitleLao: 'ລະດັບ 1',
+      tierTitleEn: 'LEVEL 1',
+      nodes: [],
+    });
+  }
+  return tiers;
 }
 
 export const DEFAULT_AVATAR_PLACEHOLDER =
@@ -22,6 +63,90 @@ export const DEFAULT_AVATAR_PLACEHOLDER =
 export const DEFAULT_EDL_BOARD_PRESET: OrgChartStructure = {
   chartTitleLao: 'ປະທານສະພາຜູ້ບໍລິຫານ',
   chartTitleEn: 'CHAIRMAN OF THE BOARD',
+  tiers: [
+    {
+      id: 'tier-board-leader',
+      tierTitleLao: 'ປະທານສະພາຜູ້ບໍລິຫານ',
+      tierTitleEn: 'CHAIRMAN OF THE BOARD',
+      nodes: [
+        {
+          id: 'leader-1',
+          nameLao: 'ທ່ານ ປອ. ອາຄົມເດດ ວົງໄຊ',
+          nameEn: 'Akhomdeth VONGSAY, PH.D',
+          roleLao: 'ປະທານສະພາຜູ້ບໍລິຫານ',
+          roleEn: 'Chairman of the Board',
+          departmentBadge: 'ປະທານສະພາຜູ້ບໍລິຫານ / CHAIRMAN OF THE BOARD',
+        },
+      ],
+    },
+    {
+      id: 'tier-board-members',
+      tierTitleLao: 'ຄະນະກຳມະການ',
+      tierTitleEn: 'COMMITTEE MEMBERS',
+      nodes: [
+        {
+          id: 'member-1',
+          departmentBadge:
+            'ຫົວໜ້າກົມຄຸ້ມຄອງວິສາຫະກິດລັດລົງທຶນ ແລະ ການປະກັນໄພ, ກະຊວງການເງິນ',
+          nameLao: 'ທ່ານ ໄພບູນ ທ່ຽງລະໄມ',
+          nameEn: 'Mr.Phaithoun THIENGLAMAI',
+          roleLao: 'ກຳມະການ',
+          roleEn: 'Committee',
+        },
+        {
+          id: 'member-2',
+          departmentBadge: 'ຫົວໜ້າກົມຄຸ້ມຄອງໜີ້ສິນສາທາລະນະ ກະຊວງການເງິນ',
+          nameLao: 'ທ່ານ ວິເລດ ກິນນາວົງ',
+          nameEn: 'Mr.Vileth KINNAVONG',
+          roleLao: 'ກຳມະການ',
+          roleEn: 'Committee',
+        },
+        {
+          id: 'member-3',
+          departmentBadge: 'ຫົວໜ້າກົມກວດກາ ກະຊວງອຸດສາຫະກຳ ແລະ ການຄ້າ',
+          nameLao: 'ທ່ານ ເພັດສະຫວັນ ລັດຕະນະທອງໄຊ',
+          nameEn: 'Mr.Phetsavanh RATTANATHONGXAY',
+          roleLao: 'ກຳມະການ',
+          roleEn: 'Committee',
+        },
+        {
+          id: 'member-4',
+          departmentBadge:
+            'ຫົວໜ້າກົມນະໂຍບາຍ, ແຜນຍຸດທະສາດ ແລະ ປະເມີນຜົນ ກະຊວງອຸດສາຫະກຳ ແລະ ການຄ້າ',
+          nameLao: 'ທ່ານ ນາງ ປອ. ສັນຕິສຸກ ພິມພະຈັນ',
+          nameEn: 'Santisouk PHIMPHACHANH, PH.D',
+          roleLao: 'ກຳມະການ',
+          roleEn: 'Committee',
+        },
+        {
+          id: 'member-5',
+          departmentBadge: 'ຫົວໜ້າຫ້ອງການຄະນະກຳມະການຄຸ້ມຄອງຫຼັກຊັບ',
+          nameLao: 'ທ່ານ ປອ.ຊາຍຄຳ ພຸດທະວົງ',
+          nameEn: 'Xaykham PHOUTTHAVONG, PH.D',
+          roleLao: 'ກຳມະການ',
+          roleEn: 'Committee',
+        },
+        {
+          id: 'member-6',
+          departmentBadge: 'ຮອງອະທິການບໍດີ ມະຫາວິທະຍາໄລ ແຫ່ງຊາດ',
+          nameLao: 'ທ່ານ ຮສ.ປອ ພູເພັດ ກ້ຽວພິລາວົງ',
+          nameEn: 'Phouphet KYOPHILAVONG, Prof.D',
+          roleLao: 'ກຳມະການ',
+          roleEn: 'Committee',
+        },
+        {
+          id: 'member-7',
+          departmentBadge:
+            'ຫົວໜ້າກົມຄຸ້ມຄອງທະນາຄານທຸລະກິດ ທະນາຄານແຫ່ງ ສປປ ລາວ',
+          nameLao: 'ທ່ານ ເພັດສະຖາພອນ ແກ້ວວົງວິຈິດ',
+          nameEn: 'Mr.Phetsathaphone KEOVONGVICHITH',
+          roleLao: 'ກຳມະການ',
+          roleEn: 'Committee',
+        },
+      ],
+    },
+  ],
+  // Legacy compatibility:
   leader: {
     id: 'leader-1',
     nameLao: 'ທ່ານ ປອ. ອາຄົມເດດ ວົງໄຊ',
@@ -30,72 +155,68 @@ export const DEFAULT_EDL_BOARD_PRESET: OrgChartStructure = {
     roleEn: 'Chairman of the Board',
     departmentBadge: 'ປະທານສະພາຜູ້ບໍລິຫານ / CHAIRMAN OF THE BOARD',
   },
-  members: [
-    {
-      id: 'member-1',
-      departmentBadge:
-        'ຫົວໜ້າກົມຄຸ້ມຄອງວິສາຫະກິດລັດລົງທຶນ ແລະ ການປະກັນໄພ, ກະຊວງການເງິນ',
-      nameLao: 'ທ່ານ ໄພບູນ ທ່ຽງລະໄມ',
-      nameEn: 'Mr.Phaithoun THIENGLAMAI',
-      roleLao: 'ກຳມະການ',
-      roleEn: 'Committee',
-    },
-    {
-      id: 'member-2',
-      departmentBadge: 'ຫົວໜ້າກົມຄຸ້ມຄອງໜີ້ສິນສາທາລະນະ ກະຊວງການເງິນ',
-      nameLao: 'ທ່ານ ວິເລດ ກິນນາວົງ',
-      nameEn: 'Mr.Vileth KINNAVONG',
-      roleLao: 'ກຳມະການ',
-      roleEn: 'Committee',
-    },
-    {
-      id: 'member-3',
-      departmentBadge: 'ຫົວໜ້າກົມກວດກາ ກະຊວງອຸດສາຫະກຳ ແລະ ການຄ້າ',
-      nameLao: 'ທ່ານ ເພັດສະຫວັນ ລັດຕະນະທອງໄຊ',
-      nameEn: 'Mr.Phetsavanh RATTANATHONGXAY',
-      roleLao: 'ກຳມະການ',
-      roleEn: 'Committee',
-    },
-    {
-      id: 'member-4',
-      departmentBadge:
-        'ຫົວໜ້າກົມນະໂຍບາຍ, ແຜນຍຸດທະສາດ ແລະ ປະເມີນຜົນ ກະຊວງອຸດສາຫະກຳ ແລະ ການຄ້າ',
-      nameLao: 'ທ່ານ ນາງ ປອ. ສັນຕິສຸກ ພິມພະຈັນ',
-      nameEn: 'Santisouk PHIMPHACHANH, PH.D',
-      roleLao: 'ກຳມະການ',
-      roleEn: 'Committee',
-    },
-    {
-      id: 'member-5',
-      departmentBadge: 'ຫົວໜ້າຫ້ອງການຄະນະກຳມະການຄຸ້ມຄອງຫຼັກຊັບ',
-      nameLao: 'ທ່ານ ປອ.ຊາຍຄຳ ພຸດທະວົງ',
-      nameEn: 'Xaykham PHOUTTHAVONG, PH.D',
-      roleLao: 'ກຳມະການ',
-      roleEn: 'Committee',
-    },
-    {
-      id: 'member-6',
-      departmentBadge: 'ຮອງອະທິການບໍດີ ມະຫາວິທະຍາໄລ ແຫ່ງຊາດ',
-      nameLao: 'ທ່ານ ຮສ.ປອ ພູເພັດ ກ້ຽວພິລາວົງ',
-      nameEn: 'Phouphet KYOPHILAVONG, Prof.D',
-      roleLao: 'ກຳມະການ',
-      roleEn: 'Committee',
-    },
-    {
-      id: 'member-7',
-      departmentBadge:
-        'ຫົວໜ້າກົມຄຸ້ມຄອງທະນາຄານທຸລະກິດ ທະນາຄານແຫ່ງ ສປປ ລາວ',
-      nameLao: 'ທ່ານ ເພັດສະຖາພອນ ແກ້ວວົງວິຈິດ',
-      nameEn: 'Mr.Phetsathaphone KEOVONGVICHITH',
-      roleLao: 'ກຳມະການ',
-      roleEn: 'Committee',
-    },
-  ],
+  members: [],
 };
 
 export const DEFAULT_EXECUTIVE_PRESET: OrgChartStructure = {
   chartTitleLao: 'ຄະນະຜູ້ອຳນວຍການໃຫຍ່',
   chartTitleEn: 'MANAGING DIRECTORS & EXECUTIVES',
+  tiers: [
+    {
+      id: 'tier-exec-1',
+      tierTitleLao: 'ຄະນະຜູ້ອຳນວຍການໃຫຍ່',
+      tierTitleEn: 'MANAGING DIRECTOR',
+      nodes: [
+        {
+          id: 'leader-exec',
+          nameLao: 'ທ່ານ ຜູ້ອຳນວຍການໃຫຍ່ ຟຟລ',
+          nameEn: 'Managing Director of EDL',
+          roleLao: 'ຜູ້ອຳນວຍການໃຫຍ່',
+          roleEn: 'Managing Director',
+          departmentBadge: 'ຄະນະຜູ້ອຳນວຍການໃຫຍ່ / MANAGING DIRECTOR',
+        },
+      ],
+    },
+    {
+      id: 'tier-exec-2',
+      tierTitleLao: 'ຄະນະຮອງຜູ້ອຳນວຍການໃຫຍ່',
+      tierTitleEn: 'DEPUTY MANAGING DIRECTORS',
+      nodes: [
+        {
+          id: 'member-exec-1',
+          departmentBadge: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່ ຜູ້ຊີ້ນຳສາຍງານທຸລະກິດ',
+          nameLao: 'ທ່ານ ຮອງຜູ້ອຳນວຍການໃຫຍ່ 1',
+          nameEn: 'Deputy Managing Director 1',
+          roleLao: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່',
+          roleEn: 'Deputy Managing Director',
+        },
+        {
+          id: 'member-exec-2',
+          departmentBadge: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່ ຜູ້ຊີ້ນຳສາຍງານເຕັກນິກ ແລະ ວິສະວະກຳ',
+          nameLao: 'ທ່ານ ຮອງຜູ້ອຳນວຍການໃຫຍ່ 2',
+          nameEn: 'Deputy Managing Director 2',
+          roleLao: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່',
+          roleEn: 'Deputy Managing Director',
+        },
+        {
+          id: 'member-exec-3',
+          departmentBadge: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່ ຜູ້ຊີ້ນຳສາຍງານການເງິນ ແລະ ບັນຊີ',
+          nameLao: 'ທ່ານ ຮອງຜູ້ອຳນວຍການໃຫຍ່ 3',
+          nameEn: 'Deputy Managing Director 3',
+          roleLao: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່',
+          roleEn: 'Deputy Managing Director',
+        },
+        {
+          id: 'member-exec-4',
+          departmentBadge: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່ ຜູ້ຊີ້ນຳສາຍງານແຜນການ ແລະ ຄຸ້ມຄອງລະບົບ',
+          nameLao: 'ທ່ານ ຮອງຜູ້ອຳນວຍການໃຫຍ່ 4',
+          nameEn: 'Deputy Managing Director 4',
+          roleLao: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່',
+          roleEn: 'Deputy Managing Director',
+        },
+      ],
+    },
+  ],
   leader: {
     id: 'leader-exec',
     nameLao: 'ທ່ານ ຜູ້ອຳນວຍການໃຫຍ່ ຟຟລ',
@@ -104,45 +225,52 @@ export const DEFAULT_EXECUTIVE_PRESET: OrgChartStructure = {
     roleEn: 'Managing Director',
     departmentBadge: 'ຄະນະຜູ້ອຳນວຍການໃຫຍ່ / MANAGING DIRECTOR',
   },
-  members: [
-    {
-      id: 'member-exec-1',
-      departmentBadge: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່ ຜູ້ຊີ້ນຳສາຍງານທຸລະກິດ',
-      nameLao: 'ທ່ານ ຮອງຜູ້ອຳນວຍການໃຫຍ່ 1',
-      nameEn: 'Deputy Managing Director 1',
-      roleLao: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່',
-      roleEn: 'Deputy Managing Director',
-    },
-    {
-      id: 'member-exec-2',
-      departmentBadge: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່ ຜູ້ຊີ້ນຳສາຍງານເຕັກນິກ ແລະ ວິສະວະກຳ',
-      nameLao: 'ທ່ານ ຮອງຜູ້ອຳນວຍການໃຫຍ່ 2',
-      nameEn: 'Deputy Managing Director 2',
-      roleLao: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່',
-      roleEn: 'Deputy Managing Director',
-    },
-    {
-      id: 'member-exec-3',
-      departmentBadge: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່ ຜູ້ຊີ້ນຳສາຍງານການເງິນ ແລະ ບັນຊີ',
-      nameLao: 'ທ່ານ ຮອງຜູ້ອຳນວຍການໃຫຍ່ 3',
-      nameEn: 'Deputy Managing Director 3',
-      roleLao: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່',
-      roleEn: 'Deputy Managing Director',
-    },
-    {
-      id: 'member-exec-4',
-      departmentBadge: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່ ຜູ້ຊີ້ນຳສາຍງານແຜນການ ແລະ ຄຸ້ມຄອງລະບົບ',
-      nameLao: 'ທ່ານ ຮອງຜູ້ອຳນວຍການໃຫຍ່ 4',
-      nameEn: 'Deputy Managing Director 4',
-      roleLao: 'ຮອງຜູ້ອຳນວຍການໃຫຍ່',
-      roleEn: 'Deputy Managing Director',
-    },
-  ],
+  members: [],
 };
 
 export const DEFAULT_BLANK_PRESET: OrgChartStructure = {
   chartTitleLao: 'ໂຄງຮ່າງການຈັດຕັ້ງໃໝ່',
   chartTitleEn: 'ORGANIZATION STRUCTURE',
+  tiers: [
+    {
+      id: 'tier-blank-1',
+      tierTitleLao: 'ລະດັບສູງສຸດ',
+      tierTitleEn: 'TOP LEVEL',
+      nodes: [
+        {
+          id: 'leader-blank',
+          nameLao: 'ຊື່ ແລະ ນາມສະກຸນ ຫົວໜ້າ',
+          nameEn: 'Leader Name & Surname',
+          roleLao: 'ຫົວໜ້າ / ຜູ້ອຳນວຍການ',
+          roleEn: 'Head / Director',
+          departmentBadge: 'ຕຳແໜ່ງສູງສຸດ / TOP LEADER',
+        },
+      ],
+    },
+    {
+      id: 'tier-blank-2',
+      tierTitleLao: 'ລະດັບກຳມະການ',
+      tierTitleEn: 'SECOND LEVEL',
+      nodes: [
+        {
+          id: 'member-blank-1',
+          departmentBadge: 'ໜ່ວຍງານ / ພະແນກ / ສັງກັດ 1',
+          nameLao: 'ຊື່ ສະມາຊິກ 1',
+          nameEn: 'Member Name 1',
+          roleLao: 'ຕຳແໜ່ງ 1',
+          roleEn: 'Position 1',
+        },
+        {
+          id: 'member-blank-2',
+          departmentBadge: 'ໜ່ວຍງານ / ພະແນກ / ສັງກັດ 2',
+          nameLao: 'ຊື່ ສະມາຊິກ 2',
+          nameEn: 'Member Name 2',
+          roleLao: 'ຕຳແໜ່ງ 2',
+          roleEn: 'Position 2',
+        },
+      ],
+    },
+  ],
   leader: {
     id: 'leader-blank',
     nameLao: 'ຊື່ ແລະ ນາມສະກຸນ ຫົວໜ້າ',
@@ -151,22 +279,5 @@ export const DEFAULT_BLANK_PRESET: OrgChartStructure = {
     roleEn: 'Head / Director',
     departmentBadge: 'ຕຳແໜ່ງສູງສຸດ / TOP LEADER',
   },
-  members: [
-    {
-      id: 'member-blank-1',
-      departmentBadge: 'ໜ່ວຍງານ / ພະແນກ / ສັງກັດ 1',
-      nameLao: 'ຊື່ ສະມາຊິກ 1',
-      nameEn: 'Member Name 1',
-      roleLao: 'ຕຳແໜ່ງ 1',
-      roleEn: 'Position 1',
-    },
-    {
-      id: 'member-blank-2',
-      departmentBadge: 'ໜ່ວຍງານ / ພະແນກ / ສັງກັດ 2',
-      nameLao: 'ຊື່ ສະມາຊິກ 2',
-      nameEn: 'Member Name 2',
-      roleLao: 'ຕຳແໜ່ງ 2',
-      roleEn: 'Position 2',
-    },
-  ],
+  members: [],
 };

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { X, Upload, Trash2, User, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { OrgChartPersonNode } from '../../domain/org-chart-designer.types';
+import { compressAvatarImage } from '../../application/org-chart-canvas-exporter';
 
 interface OrgChartNodeEditorModalProps {
   node: OrgChartPersonNode | null;
@@ -40,17 +41,16 @@ export function OrgChartNodeEditorModal({
 
   if (!isOpen || !node) return null;
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setPhotoUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressAvatarImage(file);
+      setPhotoUrl(compressed);
+    } catch (err) {
+      console.warn('Failed to compress avatar photo:', err);
+    }
   };
 
   const handleRemovePhoto = () => {

@@ -31,6 +31,7 @@ import {
   exportOrgChartToImageFile,
   saveOrgChartToStorage,
   loadOrgChartFromStorage,
+  sanitizeChartStructure,
 } from '../../application/org-chart-canvas-exporter';
 import { OrgChartDesigner } from './org-chart-designer';
 import { cn } from '@/lib/utils';
@@ -82,8 +83,9 @@ export function OrgStructureFormModal({
       setStatus(orgStructure.status || 'ACTIVE');
       setImageFile(orgStructure.imageUrl || null);
 
-      // Try loading existing interactive chart from storage
+      // Try loading existing interactive chart (DB first, then localStorage)
       const savedChart =
+        orgStructure.chartData ||
         loadOrgChartFromStorage(orgStructure.id) ||
         loadOrgChartFromStorage(orgStructure.structureName);
 
@@ -156,12 +158,22 @@ export function OrgStructureFormModal({
       setIsExporting(true);
       let savedId = orgStructure?.id;
 
-      // 1. Prepare image file to upload
-      let fileToUpload: File | null = null;
+      // 1. Sanitize & compress any photos in chartStructure to prevent PayloadTooLarge / 500 error
+      let chartToSave: any = null;
       if (mode === 'designer') {
+        const sanitized = await sanitizeChartStructure(chartStructure);
+        setChartStructure(sanitized);
+        chartToSave = sanitized;
+      } else if (orgStructure?.chartData) {
+        chartToSave = await sanitizeChartStructure(orgStructure.chartData);
+      }
+
+      // 2. Prepare image file to upload
+      let fileToUpload: File | null = null;
+      if (mode === 'designer' && chartToSave) {
         try {
           fileToUpload = await exportOrgChartToImageFile(
-            chartStructure,
+            chartToSave,
             `org-chart-${Date.now()}.png`
           );
         } catch (exportErr) {
@@ -171,11 +183,12 @@ export function OrgStructureFormModal({
         fileToUpload = imageFile;
       }
 
-      // 2. Prepare payload - ensure imageUrl is at least '' so backend Prisma NOT NULL constraint succeeds
+      // 3. Prepare payload - include chartData for PostgreSQL JSONB persistence!
       const payload: CreateOrgStructurePayload = {
         structureType,
         structureName: structureName.trim(),
         imageUrl: orgStructure?.imageUrl || '',
+        chartData: chartToSave,
         orderIndex: Number(orderIndex) || 0,
         status,
       };

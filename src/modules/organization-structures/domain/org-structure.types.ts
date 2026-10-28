@@ -10,6 +10,7 @@ export interface OrgStructureItem {
   structureType: StructureType;
   structureName: string;
   imageUrl?: string | null;
+  chartData?: any;
   orderIndex: number;
   status: CommonStatus;
   createdAt: string;
@@ -20,6 +21,7 @@ export interface CreateOrgStructurePayload {
   structureType: StructureType;
   structureName: string;
   imageUrl?: string;
+  chartData?: any;
   orderIndex?: number;
   status?: CommonStatus;
 }

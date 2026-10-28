@@ -8,25 +8,30 @@ import {
   Edit2,
   ArrowLeft,
   ArrowRight,
+  ArrowUp,
+  ArrowDown,
   Camera,
   ZoomIn,
   ZoomOut,
-  RotateCcw,
-  Sparkles,
   User,
   Eye,
-  Check,
+  Layers,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type {
   OrgChartStructure,
   OrgChartPersonNode,
+  OrgChartTier,
 } from '../../domain/org-chart-designer.types';
 import {
   DEFAULT_EDL_BOARD_PRESET,
   DEFAULT_EXECUTIVE_PRESET,
   DEFAULT_BLANK_PRESET,
+  normalizeChartTiers,
 } from '../../domain/org-chart-designer.types';
+import { compressAvatarImage } from '../../application/org-chart-canvas-exporter';
 import { OrgChartNodeEditorModal } from './org-chart-node-editor-modal';
 import { cn } from '@/lib/utils';
 
@@ -44,16 +49,14 @@ export function OrgChartDesigner({
   const [zoom, setZoom] = useState(1);
   const [editingNode, setEditingNode] = useState<{
     node: OrgChartPersonNode;
-    isLeader: boolean;
+    tierIndex: number;
   } | null>(null);
   const [activeTemplate, setActiveTemplate] = useState<string>('board');
   const [previewMode, setPreviewMode] = useState(false);
 
   // Quick photo upload ref
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const targetUploadNodeRef = useRef<{ id: string; isLeader: boolean } | null>(
-    null
-  );
+  const targetUploadNodeRef = useRef<string | null>(null);
 
   // Auto-detect mobile screen on mount to provide comfortable initial zoom
   useEffect(() => {
@@ -72,6 +75,17 @@ export function OrgChartDesigner({
     }
   };
 
+  const tiers = normalizeChartTiers(structure);
+
+  const updateTiers = (newTiers: OrgChartTier[]) => {
+    onChange({
+      ...structure,
+      tiers: newTiers,
+      leader: newTiers[0]?.nodes[0] || structure.leader,
+      members: newTiers.slice(1).flatMap((t) => t.nodes),
+    });
+  };
+
   // Template switch
   const handleSelectTemplate = (type: 'board' | 'executive' | 'blank') => {
     setActiveTemplate(type);
@@ -84,99 +98,164 @@ export function OrgChartDesigner({
     }
   };
 
-  // Add Member
-  const handleAddMember = () => {
-    const newMember: OrgChartPersonNode = {
-      id: `member-${Date.now()}`,
+  // Add a new tier / row
+  const handleAddTier = () => {
+    const newTierNum = tiers.length + 1;
+    const newTier: OrgChartTier = {
+      id: `tier-${Date.now()}`,
+      tierTitleLao: `ລະດັບ ${newTierNum}`,
+      tierTitleEn: `LEVEL ${newTierNum}`,
+      nodes: [
+        {
+          id: `node-${Date.now()}`,
+          nameLao: 'ຊື່ ແລະ ນາມສະກຸນ',
+          nameEn: 'Member Name',
+          roleLao: 'ກຳມະການ',
+          roleEn: 'Committee',
+          departmentBadge: 'ສັງກັດ / ໜ່ວຍງານ',
+        },
+      ],
+    };
+    updateTiers([...tiers, newTier]);
+  };
+
+  // Delete a tier
+  const handleDeleteTier = (tierId: string) => {
+    if (tiers.length <= 1) return;
+    updateTiers(tiers.filter((t) => t.id !== tierId));
+  };
+
+  // Move Tier Up / Down
+  const handleMoveTier = (tIndex: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? tIndex - 1 : tIndex + 1;
+    if (targetIndex < 0 || targetIndex >= tiers.length) return;
+    const newTiers = [...tiers];
+    const temp = newTiers[tIndex];
+    newTiers[tIndex] = newTiers[targetIndex];
+    newTiers[targetIndex] = temp;
+    updateTiers(newTiers);
+  };
+
+  // Add person into a specific tier
+  const handleAddNodeToTier = (tierId: string) => {
+    const newNode: OrgChartPersonNode = {
+      id: `node-${Date.now()}`,
       departmentBadge: 'ໜ່ວຍງານ / ພະແນກ / ສັງກັດໃໝ່',
       nameLao: 'ຊື່ ແລະ ນາມສະກຸນໃໝ່',
       nameEn: 'New Member Name',
       roleLao: 'ກຳມະການ',
       roleEn: 'Committee',
     };
-    onChange({
-      ...structure,
-      members: [...structure.members, newMember],
+    const newTiers = tiers.map((t) => {
+      if (t.id === tierId) {
+        return { ...t, nodes: [...t.nodes, newNode] };
+      }
+      return t;
     });
+    updateTiers(newTiers);
   };
 
-  // Delete Member
-  const handleDeleteMember = (id: string) => {
-    onChange({
-      ...structure,
-      members: structure.members.filter((m) => m.id !== id),
-    });
+  // Delete a person node
+  const handleDeleteNode = (nodeId: string) => {
+    const newTiers = tiers.map((t) => ({
+      ...t,
+      nodes: t.nodes.filter((n) => n.id !== nodeId),
+    }));
+    updateTiers(newTiers);
   };
 
-  // Move Member Left / Right
-  const handleMoveMember = (index: number, direction: 'left' | 'right') => {
-    const newMembers = [...structure.members];
-    const targetIndex = direction === 'left' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newMembers.length) return;
-
-    const temp = newMembers[index];
-    newMembers[index] = newMembers[targetIndex];
-    newMembers[targetIndex] = temp;
-
-    onChange({
-      ...structure,
-      members: newMembers,
+  // Move Member Left / Right within the same tier
+  const handleMoveNode = (
+    tierId: string,
+    index: number,
+    direction: 'left' | 'right'
+  ) => {
+    const newTiers = tiers.map((t) => {
+      if (t.id !== tierId) return t;
+      const targetIndex = direction === 'left' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= t.nodes.length) return t;
+      const newNodes = [...t.nodes];
+      const temp = newNodes[index];
+      newNodes[index] = newNodes[targetIndex];
+      newNodes[targetIndex] = temp;
+      return { ...t, nodes: newNodes };
     });
+    updateTiers(newTiers);
+  };
+
+  // Move Member Up / Down between tiers
+  const handleTransferNode = (
+    fromTierIndex: number,
+    nodeIndex: number,
+    direction: 'up' | 'down'
+  ) => {
+    const toTierIndex = direction === 'up' ? fromTierIndex - 1 : fromTierIndex + 1;
+    if (toTierIndex < 0 || toTierIndex >= tiers.length) return;
+
+    const movingNode = tiers[fromTierIndex].nodes[nodeIndex];
+    const newTiers = tiers.map((t, idx) => {
+      if (idx === fromTierIndex) {
+        return { ...t, nodes: t.nodes.filter((_, i) => i !== nodeIndex) };
+      }
+      if (idx === toTierIndex) {
+        return { ...t, nodes: [...t.nodes, movingNode] };
+      }
+      return t;
+    });
+    updateTiers(newTiers);
+  };
+
+  // Update tier title
+  const handleTierTitleChange = (tierId: string, lao: string, en?: string) => {
+    const newTiers = tiers.map((t) => {
+      if (t.id === tierId) {
+        return {
+          ...t,
+          tierTitleLao: lao,
+          tierTitleEn: en !== undefined ? en : t.tierTitleEn,
+        };
+      }
+      return t;
+    });
+    updateTiers(newTiers);
   };
 
   // Trigger file upload for a specific card
-  const handleTriggerUpload = (id: string, isLeader: boolean) => {
-    targetUploadNodeRef.current = { id, isLeader };
+  const handleTriggerUpload = (nodeId: string) => {
+    targetUploadNodeRef.current = nodeId;
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !targetUploadNodeRef.current) return;
+    const targetId = targetUploadNodeRef.current;
+    if (!file || !targetId) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        const url = reader.result;
-        if (targetUploadNodeRef.current?.isLeader) {
-          onChange({
-            ...structure,
-            leader: { ...structure.leader, photoUrl: url },
-          });
-        } else {
-          onChange({
-            ...structure,
-            members: structure.members.map((m) =>
-              m.id === targetUploadNodeRef.current?.id
-                ? { ...m, photoUrl: url }
-                : m
-            ),
-          });
-        }
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedUrl = await compressAvatarImage(file);
+      const newTiers = tiers.map((t) => ({
+        ...t,
+        nodes: t.nodes.map((n) =>
+          n.id === targetId ? { ...n, photoUrl: compressedUrl } : n
+        ),
+      }));
+      updateTiers(newTiers);
+    } catch (err) {
+      console.warn('Failed to upload compressed photo:', err);
+    }
     e.target.value = '';
   };
 
   // Save from node modal
   const handleSaveNode = (updated: OrgChartPersonNode) => {
-    if (editingNode?.isLeader) {
-      onChange({
-        ...structure,
-        leader: updated,
-      });
-    } else {
-      onChange({
-        ...structure,
-        members: structure.members.map((m) =>
-          m.id === updated.id ? updated : m
-        ),
-      });
-    }
+    const newTiers = tiers.map((t) => ({
+      ...t,
+      nodes: t.nodes.map((n) => (n.id === updated.id ? updated : n)),
+    }));
+    updateTiers(newTiers);
   };
 
-  const memberCount = structure.members.length;
+  const totalMembers = tiers.reduce((acc, t) => acc + t.nodes.length, 0);
   const isEditing = !readOnly && !previewMode;
 
   return (
@@ -192,8 +271,8 @@ export function OrgChartDesigner({
 
       {/* Top Toolbar */}
       {!readOnly && (
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-2.5 sm:p-3 sm:px-4 bg-white border-b border-slate-200/70 text-xs">
-          {/* Preset Buttons - horizontally scrollable on mobile */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-2.5 sm:p-3 sm:px-4 bg-white border-b border-slate-200/70 text-xs shrink-0">
+          {/* Preset Buttons */}
           <div className="flex items-center gap-1.5 bg-slate-100/90 p-1 rounded-xl overflow-x-auto no-scrollbar max-w-full">
             <span className="text-[11px] font-bold text-slate-500 px-1.5 shrink-0">
               ແມ່ແບບ:
@@ -241,11 +320,11 @@ export function OrgChartDesigner({
             <Button
               type="button"
               size="sm"
-              onClick={handleAddMember}
-              className="h-8 px-2.5 sm:px-3 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-semibold gap-1 text-xs cursor-pointer shadow-2xs"
+              onClick={handleAddTier}
+              className="h-8 px-2.5 sm:px-3 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 font-semibold gap-1 text-xs cursor-pointer shadow-2xs"
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span>ເພີ່ມກຳມະການ ({memberCount})</span>
+              <Layers className="h-3.5 w-3.5" />
+              <span>+ ເພີ່ມຊັ້ນ/ແຖວ ({tiers.length})</span>
             </Button>
 
             <button
@@ -299,6 +378,7 @@ export function OrgChartDesigner({
         <div className="sm:hidden absolute top-2 left-2 z-10 bg-slate-900/75 backdrop-blur-xs text-white text-[10px] px-2.5 py-1 rounded-full shadow-md pointer-events-none flex items-center gap-1">
           <span>💡 ເລື່ອນຊ້າຍ-ຂວາ ຫຼື ຫຍໍ້-ຂະຫຍາຍ</span>
         </div>
+
         <div
           style={{
             transform: `scale(${zoom})`,
@@ -308,8 +388,8 @@ export function OrgChartDesigner({
           className="flex flex-col items-center py-6 px-10 bg-white rounded-3xl shadow-sm border border-slate-200/80 min-w-max"
         >
           {/* 1. Top Header Pill */}
-          <div className="relative group mb-6">
-            <div className="px-10 py-3 rounded-2xl border-2 border-blue-900 bg-white shadow-xs text-center min-w-[360px]">
+          <div className="relative group mb-8">
+            <div className="px-6 sm:px-10 py-3 rounded-2xl border-2 border-blue-900 bg-white shadow-xs text-center min-w-[280px] sm:min-w-[380px]">
               {isEditing ? (
                 <div className="space-y-0.5">
                   <input
@@ -334,324 +414,324 @@ export function OrgChartDesigner({
               ) : (
                 <>
                   <h2 className="text-xl font-bold text-blue-950">
-                    {structure.chartTitleLao || 'ປະທານສະພາຜູ້ບໍລິຫານ'}
+                    {structure.chartTitleLao || 'ໂຄງຮ່າງການຈັດຕັ້ງ'}
                   </h2>
                   <p className="text-[11px] font-bold tracking-wider text-blue-600 uppercase mt-0.5">
-                    {structure.chartTitleEn || 'CHAIRMAN OF THE BOARD'}
+                    {structure.chartTitleEn || 'ORGANIZATION STRUCTURE'}
                   </p>
                 </>
               )}
             </div>
           </div>
 
-          {/* 2. Leader Card (Level 1) */}
-          <div className="relative flex flex-col items-center">
-            <div className="relative w-52 p-3 pb-4 rounded-2xl border-2 border-amber-400/90 bg-white shadow-sm hover:shadow-md transition-all group">
-              {/* Photo */}
-              <div className="relative h-48 w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
-                {structure.leader.photoUrl ? (
-                  <Image
-                    src={structure.leader.photoUrl}
-                    alt={structure.leader.nameLao}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center text-slate-300 gap-1">
-                    <User className="h-14 w-14" />
-                    <span className="text-[10px]">ຍັງບໍ່ມີຮູບ</span>
-                  </div>
-                )}
+          {/* 2. Multi-Tier Rendering */}
+          <div className="flex flex-col items-center space-y-10 w-full">
+            {tiers.map((tier, tIdx) => {
+              const nodeCount = tier.nodes.length;
 
-                {/* Mobile direct edit buttons on small screens */}
-                {isEditing && (
-                  <div className="sm:hidden absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTriggerUpload(structure.leader.id, true);
-                      }}
-                      className="p-1.5 rounded-lg bg-white/95 text-blue-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
-                      title="ປ່ຽນຮູບພາບ"
-                    >
-                      <Camera className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingNode({
-                          node: structure.leader,
-                          isLeader: true,
-                        });
-                      }}
-                      className="p-1.5 rounded-lg bg-white/95 text-amber-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
-                      title="ແກ້ໄຂລາຍລະອຽດ"
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                )}
+              return (
+                <div key={tier.id} className="relative flex flex-col items-center w-full">
+                  {/* Stem from previous tier */}
+                  {tIdx > 0 && (
+                    <div className="w-0.5 h-8 bg-slate-400/80 -mt-10 mb-2" />
+                  )}
 
-                {/* Photo hover action (Desktop) */}
-                {isEditing && (
-                  <div className="hidden sm:flex absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-2 backdrop-blur-2xs">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleTriggerUpload(structure.leader.id, true)
-                      }
-                      className="p-2 rounded-xl bg-white text-slate-800 hover:bg-slate-100 shadow-md transition cursor-pointer text-xs font-semibold flex items-center gap-1"
-                      title="ປ່ຽນຮູບພາບ"
-                    >
-                      <Camera className="h-3.5 w-3.5 text-blue-600" />
-                      <span>ປ່ຽນຮູບ</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEditingNode({
-                          node: structure.leader,
-                          isLeader: true,
-                        })
-                      }
-                      className="p-2 rounded-xl bg-white text-slate-800 hover:bg-slate-100 shadow-md transition cursor-pointer"
-                      title="ແກ້ໄຂລາຍລະອຽດ"
-                    >
-                      <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Names */}
-              <div className="mt-2.5 text-center space-y-0.5">
-                <p className="font-bold text-blue-950 text-xs truncate">
-                  {structure.leader.nameLao || 'ຊື່ປະທານ / ຫົວໜ້າ'}
-                </p>
-                <p className="font-semibold text-slate-600 text-[10px] truncate">
-                  {structure.leader.nameEn || 'Chairman Name'}
-                </p>
-              </div>
-            </div>
-
-            {/* Vertical connector line dropping down from Leader */}
-            <div className="w-0.5 h-10 bg-slate-400/80 my-0" />
-          </div>
-
-          {/* 3. Horizontal Crossbar & Connecting Lines */}
-          {structure.members.length > 0 && (
-            <div className="relative w-full flex flex-col items-center">
-              {/* Horizontal Crossbar line spanning members */}
-              <div
-                style={{
-                  width: `${Math.max(
-                    (structure.members.length - 1) * 200,
-                    0
-                  )}px`,
-                }}
-                className="h-0.5 bg-slate-400/80"
-              />
-
-              {/* 4. Committee Members (Level 2) Horizontal Row */}
-              <div className="flex items-start gap-5 pt-0">
-                {structure.members.map((member, index) => (
-                  <div
-                    key={member.id}
-                    className="flex flex-col items-center relative group w-48"
-                  >
-                    {/* Vertical stem from crossbar to member pill */}
-                    <div className="w-0.5 h-6 bg-slate-400/80" />
-
-                    {/* Department / Ministry Pill */}
-                    <div
-                      onClick={() =>
-                        isEditing &&
-                        setEditingNode({ node: member, isLeader: false })
-                      }
-                      className={cn(
-                        'w-full min-h-[46px] p-1.5 px-2 rounded-xl border border-blue-200 bg-white shadow-2xs flex items-center justify-center text-center transition cursor-pointer',
-                        isEditing && 'hover:border-blue-400 hover:bg-blue-50/40'
-                      )}
-                      title={isEditing ? 'ກົດເພື່ອແກ້ໄຂ' : undefined}
-                    >
-                      <p className="font-bold text-blue-950 text-[10px] leading-snug line-clamp-2">
-                        {member.departmentBadge || 'ກຳມະການ'}
-                      </p>
-                    </div>
-
-                    {/* Short stem from pill to card */}
-                    <div className="w-0.5 h-3 bg-slate-400/80" />
-
-                    {/* Member Card */}
-                    <div className="relative w-full p-2.5 pb-3.5 rounded-2xl border-2 border-amber-300/80 bg-white shadow-sm hover:shadow-md transition-all">
-                      {/* Photo */}
-                      <div className="relative h-44 w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
-                        {member.photoUrl ? (
-                          <Image
-                            src={member.photoUrl}
-                            alt={member.nameLao}
-                            fill
-                            unoptimized
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center text-slate-300 gap-1">
-                            <User className="h-12 w-12" />
-                            <span className="text-[10px]">ຍັງບໍ່ມີຮູບ</span>
-                          </div>
-                        )}
-
-                        {/* Mobile direct edit buttons on small screens */}
-                        {isEditing && (
-                          <div className="sm:hidden absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleTriggerUpload(member.id, false);
-                              }}
-                              className="p-1.5 rounded-lg bg-white/95 text-blue-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
-                              title="ປ່ຽນຮູບພາບ"
-                            >
-                              <Camera className="h-3 w-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingNode({ node: member, isLeader: false });
-                              }}
-                              className="p-1.5 rounded-lg bg-white/95 text-amber-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
-                              title="ແກ້ໄຂ"
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Photo hover action (Desktop) */}
-                        {isEditing && (
-                          <div className="hidden sm:flex absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-1.5 backdrop-blur-2xs">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleTriggerUpload(member.id, false)
-                              }
-                              className="p-1.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 shadow-md transition cursor-pointer text-[11px] font-semibold flex items-center gap-1"
-                              title="ປ່ຽນຮູບພາບ"
-                            >
-                              <Camera className="h-3 w-3 text-blue-600" />
-                              <span>ປ່ຽນຮູບ</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setEditingNode({ node: member, isLeader: false })
-                              }
-                              className="p-1.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 shadow-md transition cursor-pointer"
-                              title="ແກ້ໄຂຂໍ້ມູນ"
-                            >
-                              <Edit2 className="h-3 w-3 text-amber-600" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Member Info */}
-                      <div className="mt-2 text-center space-y-0.5">
-                        <p className="font-bold text-blue-950 text-[11px] truncate">
-                          {member.nameLao}
-                        </p>
-                        <p className="font-semibold text-slate-500 text-[9px] truncate">
-                          {member.nameEn}
-                        </p>
-                        <div className="pt-1.5 border-t border-slate-100 mt-1">
-                          <p className="font-bold text-blue-950 text-xs">
-                            {member.roleLao || 'ກຳມະການ'}
-                          </p>
-                          <p className="text-slate-500 text-[10px]">
-                            {member.roleEn || 'Committee'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Card Control Bar - Visible on mobile, hover on desktop */}
-                      {isEditing && (
-                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-0.5 rounded-full shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
-                          <button
-                            type="button"
-                            onClick={() => handleMoveMember(index, 'left')}
-                            disabled={index === 0}
-                            className="p-1 rounded-full text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                            title="ຍ້າຍຊ້າຍ"
-                          >
-                            <ArrowLeft className="h-2.5 w-2.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditingNode({ node: member, isLeader: false })
-                            }
-                            className="p-1 rounded-full text-blue-600 hover:bg-blue-50 cursor-pointer"
-                            title="ແກ້ໄຂ"
-                          >
-                            <Edit2 className="h-2.5 w-2.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteMember(member.id)}
-                            className="p-1 rounded-full text-rose-500 hover:bg-rose-50 cursor-pointer"
-                            title="ລຶບສະມາຊິກນີ້"
-                          >
-                            <Trash2 className="h-2.5 w-2.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveMember(index, 'right')}
-                            disabled={index === structure.members.length - 1}
-                            className="p-1 rounded-full text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                            title="ຍ້າຍຂວາ"
-                          >
-                            <ArrowRight className="h-2.5 w-2.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Add member placeholder column */}
-                {isEditing && (
-                  <div className="flex flex-col items-center w-36 pt-16">
-                    <button
-                      type="button"
-                      onClick={handleAddMember}
-                      className="h-44 w-full rounded-2xl border-2 border-dashed border-slate-300 hover:border-blue-500 bg-white hover:bg-blue-50/40 text-slate-400 hover:text-blue-600 flex flex-col items-center justify-center gap-2 transition cursor-pointer group shadow-2xs"
-                    >
-                      <div className="h-8 w-8 rounded-full bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center transition">
-                        <Plus className="h-4 w-4 text-slate-600 group-hover:text-blue-600" />
-                      </div>
-                      <span className="text-[11px] font-bold">
-                        ເພີ່ມສະມາຊິກ
+                  {/* Tier Bar Header */}
+                  {isEditing && (
+                    <div className="flex items-center gap-2 mb-3 bg-slate-100/80 px-3 py-1 rounded-xl border border-slate-200/60 text-xs">
+                      <span className="font-bold text-slate-500 text-[10px]">
+                        ແຖວທີ {tIdx + 1}:
                       </span>
-                    </button>
+                      <input
+                        type="text"
+                        value={tier.tierTitleLao || ''}
+                        onChange={(e) =>
+                          handleTierTitleChange(tier.id, e.target.value)
+                        }
+                        placeholder={`ລະດັບ ${tIdx + 1}`}
+                        className="font-bold text-blue-950 bg-transparent px-1.5 py-0.5 rounded focus:bg-white text-xs border-b border-transparent focus:border-blue-400 focus:outline-none"
+                      />
+
+                      <span className="h-3 w-px bg-slate-300 mx-1" />
+
+                      <button
+                        type="button"
+                        onClick={() => handleAddNodeToTier(tier.id)}
+                        className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
+                        title="ເພີ່ມຄົນໃນແຖວນີ້"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>ເພີ່ມຄົນ ({nodeCount})</span>
+                      </button>
+
+                      {tiers.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveTier(tIdx, 'up')}
+                            disabled={tIdx === 0}
+                            className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                            title="ຍ້າຍແຖວຂຶ້ນ"
+                          >
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveTier(tIdx, 'down')}
+                            disabled={tIdx === tiers.length - 1}
+                            className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                            title="ຍ້າຍແຖວລົງ"
+                          >
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTier(tier.id)}
+                            className="p-1 rounded text-rose-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                            title="ລຶບແຖວນີ້"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Horizontal Crossbar line if multiple nodes */}
+                  {nodeCount > 1 && (
+                    <div
+                      style={{
+                        width: `${Math.max((nodeCount - 1) * 208, 0)}px`,
+                      }}
+                      className="h-0.5 bg-slate-400/80 mb-0"
+                    />
+                  )}
+
+                  {/* Nodes in this tier */}
+                  <div className="flex items-start justify-center gap-4 mt-0">
+                    {tier.nodes.map((node, nIdx) => (
+                      <div
+                        key={node.id}
+                        className="flex flex-col items-center relative group w-48"
+                      >
+                        {/* Vertical stem from crossbar to card/pill */}
+                        {nodeCount > 1 && (
+                          <div className="w-0.5 h-5 bg-slate-400/80" />
+                        )}
+
+                        {/* Department Badge Pill */}
+                        {node.departmentBadge && (
+                          <>
+                            <div
+                              onClick={() =>
+                                isEditing &&
+                                setEditingNode({ node, tierIndex: tIdx })
+                              }
+                              className={cn(
+                                'w-full min-h-[44px] p-1.5 px-2 rounded-xl border border-blue-200 bg-white shadow-2xs flex items-center justify-center text-center transition cursor-pointer',
+                                isEditing && 'hover:border-blue-400 hover:bg-blue-50/40 active:scale-[0.98]'
+                              )}
+                              title={isEditing ? 'ກົດເພື່ອແກ້ໄຂ' : undefined}
+                            >
+                              <p className="font-bold text-blue-950 text-[10px] leading-snug line-clamp-2">
+                                {node.departmentBadge}
+                              </p>
+                            </div>
+                            <div className="w-0.5 h-3 bg-slate-400/80" />
+                          </>
+                        )}
+
+                        {/* Card Box */}
+                        <div
+                          className={cn(
+                            'relative w-full p-2.5 pb-3.5 rounded-2xl border-2 bg-white shadow-sm hover:shadow-md transition-all',
+                            tIdx === 0
+                              ? 'border-amber-400/90'
+                              : 'border-amber-300/80'
+                          )}
+                        >
+                          {/* Photo */}
+                          <div className="relative h-44 w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+                            {node.photoUrl ? (
+                              <Image
+                                src={node.photoUrl}
+                                alt={node.nameLao}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center text-slate-300 gap-1">
+                                <User className="h-12 w-12" />
+                                <span className="text-[10px]">ຍັງບໍ່ມີຮູບ</span>
+                              </div>
+                            )}
+
+                            {/* Mobile direct edit buttons */}
+                            {isEditing && (
+                              <div className="sm:hidden absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTriggerUpload(node.id);
+                                  }}
+                                  className="p-1.5 rounded-lg bg-white/95 text-blue-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
+                                  title="ປ່ຽນຮູບພາບ"
+                                >
+                                  <Camera className="h-3 w-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingNode({ node, tierIndex: tIdx });
+                                  }}
+                                  className="p-1.5 rounded-lg bg-white/95 text-amber-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
+                                  title="ແກ້ໄຂ"
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Desktop hover action */}
+                            {isEditing && (
+                              <div className="hidden sm:flex absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-1.5 backdrop-blur-2xs">
+                                <button
+                                  type="button"
+                                  onClick={() => handleTriggerUpload(node.id)}
+                                  className="p-1.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 shadow-md transition cursor-pointer text-[11px] font-semibold flex items-center gap-1"
+                                  title="ປ່ຽນຮູບພາບ"
+                                >
+                                  <Camera className="h-3 w-3 text-blue-600" />
+                                  <span>ປ່ຽນຮູບ</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditingNode({ node, tierIndex: tIdx })
+                                  }
+                                  className="p-1.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 shadow-md transition cursor-pointer"
+                                  title="ແກ້ໄຂຂໍ້ມູນ"
+                                >
+                                  <Edit2 className="h-3 w-3 text-amber-600" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Member Info */}
+                          <div className="mt-2 text-center space-y-0.5">
+                            <p className="font-bold text-blue-950 text-[11px] truncate">
+                              {node.nameLao || 'ຊື່ ແລະ ນາມສະກຸນ'}
+                            </p>
+                            <p className="font-semibold text-slate-500 text-[9px] truncate">
+                              {node.nameEn || 'Name & Surname'}
+                            </p>
+                            <div className="pt-1.5 border-t border-slate-100 mt-1">
+                              <p className="font-bold text-blue-950 text-xs">
+                                {node.roleLao || 'ຕຳແໜ່ງ'}
+                              </p>
+                              <p className="text-slate-500 text-[10px]">
+                                {node.roleEn || 'Position'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Card Control Bar */}
+                          {isEditing && (
+                            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-0.5 rounded-full shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleMoveNode(tier.id, nIdx, 'left')
+                                }
+                                disabled={nIdx === 0}
+                                className="p-1 rounded-full text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                                title="ຍ້າຍຊ້າຍ"
+                              >
+                                <ArrowLeft className="h-2.5 w-2.5" />
+                              </button>
+
+                              {/* Transfer Up */}
+                              {tIdx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleTransferNode(tIdx, nIdx, 'up')
+                                  }
+                                  className="p-1 rounded-full text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                                  title="ຍ້າຍຂຶ້ນແຖວເທິງ"
+                                >
+                                  <ArrowUp className="h-2.5 w-2.5" />
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditingNode({ node, tierIndex: tIdx })
+                                }
+                                className="p-1 rounded-full text-blue-600 hover:bg-blue-50 cursor-pointer"
+                                title="ແກ້ໄຂ"
+                              >
+                                <Edit2 className="h-2.5 w-2.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteNode(node.id)}
+                                className="p-1 rounded-full text-rose-500 hover:bg-rose-50 cursor-pointer"
+                                title="ລຶບຄົນນີ້"
+                              >
+                                <Trash2 className="h-2.5 w-2.5" />
+                              </button>
+
+                              {/* Transfer Down */}
+                              {tIdx < tiers.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleTransferNode(tIdx, nIdx, 'down')
+                                  }
+                                  className="p-1 rounded-full text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                                  title="ຍ້າຍລົງແຖວລຸ່ມ"
+                                >
+                                  <ArrowDown className="h-2.5 w-2.5" />
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleMoveNode(tier.id, nIdx, 'right')
+                                }
+                                disabled={nIdx === nodeCount - 1}
+                                className="p-1 rounded-full text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                                title="ຍ້າຍຂວາ"
+                              >
+                                <ArrowRight className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            </div>
-          )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Node Edit Modal */}
+      {/* 3. Node Edit Modal */}
       {editingNode && (
         <OrgChartNodeEditorModal
           isOpen={Boolean(editingNode)}
           node={editingNode.node}
-          isLeader={editingNode.isLeader}
+          isLeader={editingNode.tierIndex === 0}
           onClose={() => setEditingNode(null)}
           onSave={handleSaveNode}
         />

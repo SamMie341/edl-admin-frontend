@@ -39,8 +39,9 @@ export function OrgStructurePreviewPage({
   const [chartData, setChartData] = useState<OrgChartStructure | null>(null);
 
   useEffect(() => {
-    // Check localStorage for interactive chart data
+    // Check if chartData exists on item (from DB) or fallback to localStorage
     const saved =
+      item.chartData ||
       loadOrgChartFromStorage(item.id) ||
       loadOrgChartFromStorage(item.structureName);
 
