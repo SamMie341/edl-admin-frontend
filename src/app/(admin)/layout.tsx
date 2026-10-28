@@ -6,11 +6,11 @@ import { AppBackground } from '@/core/presentation/components/layout/app-backgro
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <AppBackground>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full relative">
         <AdminSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
           <AdminHeader />
-          <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+          <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto">
             {children}
           </main>
         </div>

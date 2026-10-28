@@ -79,14 +79,14 @@ export function OrgChartNodeEditorModal({
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-slate-200/80 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-lg rounded-2xl sm:rounded-3xl bg-white shadow-2xl border border-slate-200/80 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 px-6 border-b border-slate-100 bg-slate-50/70">
+        <div className="flex items-center justify-between p-3.5 px-4 sm:p-4 sm:px-6 border-b border-slate-100 bg-slate-50/70">
           <div>
             <h3 className="font-bold text-slate-900 text-sm">
               {isLeader ? 'ແກ້ໄຂຂໍ້ມູນປະທານ / ຫົວໜ້າ' : 'ແກ້ໄຂຂໍ້ມູນກຳມະການ / ສະມາຊິກ'}
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
               ກຳນົດຊື່, ຕຳແໜ່ງ, ໜ່ວຍງານ ແລະ ຮູບພາບຂອງບຸກຄະລາກອນ
             </p>
           </div>
@@ -99,13 +99,13 @@ export function OrgChartNodeEditorModal({
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 max-h-[78vh] overflow-y-auto text-xs">
           {/* Photo Section */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
               ຮູບພາບປະກອບ (Portrait Photo)
             </label>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="relative h-28 w-24 rounded-2xl overflow-hidden border-2 border-amber-300 bg-slate-50 shadow-2xs flex items-center justify-center shrink-0">
                 {photoUrl ? (
                   <Image
@@ -121,7 +121,7 @@ export function OrgChartNodeEditorModal({
               </div>
 
               <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-semibold cursor-pointer transition shadow-2xs text-xs">
                     <Upload className="h-3.5 w-3.5" />
                     <span>ອັບໂຫຼດຮູບພາບໃໝ່</span>

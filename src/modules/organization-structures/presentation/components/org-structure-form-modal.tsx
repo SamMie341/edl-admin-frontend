@@ -18,6 +18,7 @@ import type {
   OrgStructureItem,
   StructureType,
   CommonStatus,
+  CreateOrgStructurePayload,
 } from '../../domain/org-structure.types';
 import { STRUCTURE_TYPE_LABELS } from '../../domain/org-structure.types';
 import type { OrgChartStructure } from '../../domain/org-chart-designer.types';
@@ -142,6 +143,10 @@ export function OrgStructureFormModal({
       newErrors.structureName = 'ກະລຸນາປ້ອນຊື່ໂຄງຮ່າງການຈັດຕັ້ງ';
     }
 
+    if (mode === 'upload' && !isEdit && !imageFile) {
+      newErrors.imageFile = 'ກະລຸນາເລືອກໄຟລ໌ຮູບພາບ';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -151,9 +156,26 @@ export function OrgStructureFormModal({
       setIsExporting(true);
       let savedId = orgStructure?.id;
 
-      const payload = {
+      // 1. Prepare image file to upload
+      let fileToUpload: File | null = null;
+      if (mode === 'designer') {
+        try {
+          fileToUpload = await exportOrgChartToImageFile(
+            chartStructure,
+            `org-chart-${Date.now()}.png`
+          );
+        } catch (exportErr) {
+          console.warn('Canvas export warning:', exportErr);
+        }
+      } else if (mode === 'upload' && imageFile instanceof File) {
+        fileToUpload = imageFile;
+      }
+
+      // 2. Prepare payload - ensure imageUrl is at least '' so backend Prisma NOT NULL constraint succeeds
+      const payload: CreateOrgStructurePayload = {
         structureType,
         structureName: structureName.trim(),
+        imageUrl: orgStructure?.imageUrl || '',
         orderIndex: Number(orderIndex) || 0,
         status,
       };
@@ -165,46 +187,28 @@ export function OrgStructureFormModal({
         });
       } else {
         const created = await createMutation.mutateAsync(payload);
-        savedId = created.id;
+        savedId = created?.id;
       }
 
-      // 1. If in Designer mode: export canvas PNG and save JSON
-      if (mode === 'designer') {
-        if (savedId) {
+      // 3. Save chart data to localStorage & upload image to server
+      if (savedId) {
+        if (mode === 'designer') {
           saveOrgChartToStorage(savedId, chartStructure);
           saveOrgChartToStorage(structureName.trim(), chartStructure);
         }
 
-        try {
-          const generatedPngFile = await exportOrgChartToImageFile(
-            chartStructure,
-            `org-chart-${Date.now()}.png`
-          );
-          if (savedId && generatedPngFile) {
-            await uploadImageMutation.mutateAsync({
-              id: savedId,
-              file: generatedPngFile,
-            });
-          }
-        } catch (exportErr) {
-          console.warn('Canvas export skipped, saved structure data', exportErr);
-        }
-      } else {
-        // 2. If in Upload mode: upload provided File
-        if (savedId && imageFile instanceof File) {
+        if (fileToUpload) {
           await uploadImageMutation.mutateAsync({
             id: savedId,
-            file: imageFile,
+            file: fileToUpload,
           });
         }
       }
 
-      toast.success(
-        isEdit ? 'ອັບເດດໂຄງຮ່າງການຈັດຕັ້ງສຳເລັດ' : 'ສ້າງໂຄງຮ່າງການຈັດຕັ້ງສຳເລັດ'
-      );
       onClose();
-    } catch {
-      // Handled by hook toasts
+    } catch (err: any) {
+      console.error('Failed to submit form:', err);
+      toast.error(err?.message || 'ບັນທຶກບໍ່ສຳເລັດ');
     } finally {
       setIsExporting(false);
     }
@@ -363,9 +367,23 @@ export function OrgStructureFormModal({
               type="image"
               label="ຮູບພາບແຜນຜັງໂຄງຮ່າງ (Org Chart Image)"
               value={imageFile}
-              onChange={setImageFile}
+              onChange={(file) => {
+                setImageFile(file);
+                if (file && errors.imageFile) {
+                  setErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.imageFile;
+                    return next;
+                  });
+                }
+              }}
               helperText="ຮູບພາບແຜນຜັງຂະໜາດໃຫຍ່, ຄວາມລະອຽດສູງ (JPG, PNG, WebP)"
             />
+            {errors.imageFile && (
+              <p className="text-[11px] font-medium text-rose-500">
+                {errors.imageFile}
+              </p>
+            )}
           </div>
         )}
       </div>

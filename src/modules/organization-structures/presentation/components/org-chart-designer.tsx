@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Plus,
@@ -55,9 +55,22 @@ export function OrgChartDesigner({
     null
   );
 
-  const handleZoomIn = () => setZoom((z) => Math.min(z + 0.1, 1.5));
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.1, 0.6));
-  const handleZoomReset = () => setZoom(1);
+  // Auto-detect mobile screen on mount to provide comfortable initial zoom
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setZoom(0.65);
+    }
+  }, []);
+
+  const handleZoomIn = () => setZoom((z) => Math.min(Number((z + 0.1).toFixed(2)), 1.5));
+  const handleZoomOut = () => setZoom((z) => Math.max(Number((z - 0.1).toFixed(2)), 0.4));
+  const handleZoomReset = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setZoom(0.65);
+    } else {
+      setZoom(1);
+    }
+  };
 
   // Template switch
   const handleSelectTemplate = (type: 'board' | 'executive' | 'blank') => {
@@ -179,29 +192,29 @@ export function OrgChartDesigner({
 
       {/* Top Toolbar */}
       {!readOnly && (
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3 px-4 bg-white border-b border-slate-200/70 text-xs">
-          {/* Preset Buttons */}
-          <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl">
-            <span className="text-[11px] font-bold text-slate-500 px-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-2.5 sm:p-3 sm:px-4 bg-white border-b border-slate-200/70 text-xs">
+          {/* Preset Buttons - horizontally scrollable on mobile */}
+          <div className="flex items-center gap-1.5 bg-slate-100/90 p-1 rounded-xl overflow-x-auto no-scrollbar max-w-full">
+            <span className="text-[11px] font-bold text-slate-500 px-1.5 shrink-0">
               ແມ່ແບບ:
             </span>
             <button
               type="button"
               onClick={() => handleSelectTemplate('board')}
               className={cn(
-                'px-2.5 py-1 rounded-lg font-medium transition cursor-pointer',
+                'px-2.5 py-1 rounded-lg font-medium transition cursor-pointer whitespace-nowrap text-xs',
                 activeTemplate === 'board'
                   ? 'bg-blue-600 text-white shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               )}
             >
-              ສະພາຜູ້ບໍລິຫານ ຟຟລ
+              ສະພາຜູ້ບໍລິຫານ
             </button>
             <button
               type="button"
               onClick={() => handleSelectTemplate('executive')}
               className={cn(
-                'px-2.5 py-1 rounded-lg font-medium transition cursor-pointer',
+                'px-2.5 py-1 rounded-lg font-medium transition cursor-pointer whitespace-nowrap text-xs',
                 activeTemplate === 'executive'
                   ? 'bg-blue-600 text-white shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
@@ -213,7 +226,7 @@ export function OrgChartDesigner({
               type="button"
               onClick={() => handleSelectTemplate('blank')}
               className={cn(
-                'px-2.5 py-1 rounded-lg font-medium transition cursor-pointer',
+                'px-2.5 py-1 rounded-lg font-medium transition cursor-pointer whitespace-nowrap text-xs',
                 activeTemplate === 'blank'
                   ? 'bg-blue-600 text-white shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
@@ -224,12 +237,12 @@ export function OrgChartDesigner({
           </div>
 
           {/* Action Tools */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
             <Button
               type="button"
               size="sm"
               onClick={handleAddMember}
-              className="h-8 px-3 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-semibold gap-1 text-xs cursor-pointer shadow-2xs"
+              className="h-8 px-2.5 sm:px-3 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-semibold gap-1 text-xs cursor-pointer shadow-2xs"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>ເພີ່ມກຳມະການ ({memberCount})</span>
@@ -239,14 +252,14 @@ export function OrgChartDesigner({
               type="button"
               onClick={() => setPreviewMode(!previewMode)}
               className={cn(
-                'h-8 px-3 rounded-xl border flex items-center gap-1.5 font-medium transition cursor-pointer text-xs',
+                'h-8 px-2.5 sm:px-3 rounded-xl border flex items-center gap-1.5 font-medium transition cursor-pointer text-xs',
                 previewMode
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold'
                   : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
               )}
             >
               <Eye className="h-3.5 w-3.5" />
-              <span>{previewMode ? 'ໂໝດແກ້ໄຂ' : 'ສະແດງຕົວຢ່າງ'}</span>
+              <span>{previewMode ? 'ແກ້ໄຂ' : 'ຕົວຢ່າງ'}</span>
             </button>
 
             {/* Zoom Controls */}
@@ -263,7 +276,7 @@ export function OrgChartDesigner({
                 type="button"
                 onClick={handleZoomReset}
                 className="px-1.5 text-[11px] font-mono text-slate-600 hover:bg-slate-100 rounded transition cursor-pointer"
-                title="ຂະໜາດ 100%"
+                title="ຂະໜາດພໍດີ"
               >
                 {Math.round(zoom * 100)}%
               </button>
@@ -281,7 +294,11 @@ export function OrgChartDesigner({
       )}
 
       {/* Main Canvas Workspace (Scrollable with pan & zoom) */}
-      <div className="flex-1 overflow-auto p-8 flex items-start justify-center min-h-[550px] relative select-none">
+      <div className="flex-1 overflow-auto p-3 sm:p-6 md:p-8 flex items-start justify-center min-h-[420px] md:min-h-[550px] relative select-none">
+        {/* Mobile Swipe Hint */}
+        <div className="sm:hidden absolute top-2 left-2 z-10 bg-slate-900/75 backdrop-blur-xs text-white text-[10px] px-2.5 py-1 rounded-full shadow-md pointer-events-none flex items-center gap-1">
+          <span>💡 ເລື່ອນຊ້າຍ-ຂວາ ຫຼື ຫຍໍ້-ຂະຫຍາຍ</span>
+        </div>
         <div
           style={{
             transform: `scale(${zoom})`,
@@ -347,9 +364,40 @@ export function OrgChartDesigner({
                   </div>
                 )}
 
-                {/* Photo hover action */}
+                {/* Mobile direct edit buttons on small screens */}
                 {isEditing && (
-                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-2xs">
+                  <div className="sm:hidden absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTriggerUpload(structure.leader.id, true);
+                      }}
+                      className="p-1.5 rounded-lg bg-white/95 text-blue-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
+                      title="ປ່ຽນຮູບພາບ"
+                    >
+                      <Camera className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingNode({
+                          node: structure.leader,
+                          isLeader: true,
+                        });
+                      }}
+                      className="p-1.5 rounded-lg bg-white/95 text-amber-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
+                      title="ແກ້ໄຂລາຍລະອຽດ"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Photo hover action (Desktop) */}
+                {isEditing && (
+                  <div className="hidden sm:flex absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-2 backdrop-blur-2xs">
                     <button
                       type="button"
                       onClick={() =>
@@ -456,9 +504,37 @@ export function OrgChartDesigner({
                           </div>
                         )}
 
-                        {/* Photo hover action */}
+                        {/* Mobile direct edit buttons on small screens */}
                         {isEditing && (
-                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 backdrop-blur-2xs">
+                          <div className="sm:hidden absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTriggerUpload(member.id, false);
+                              }}
+                              className="p-1.5 rounded-lg bg-white/95 text-blue-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
+                              title="ປ່ຽນຮູບພາບ"
+                            >
+                              <Camera className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingNode({ node: member, isLeader: false });
+                              }}
+                              className="p-1.5 rounded-lg bg-white/95 text-amber-600 shadow-md border border-slate-200 cursor-pointer active:scale-95"
+                              title="ແກ້ໄຂ"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Photo hover action (Desktop) */}
+                        {isEditing && (
+                          <div className="hidden sm:flex absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-1.5 backdrop-blur-2xs">
                             <button
                               type="button"
                               onClick={() =>
@@ -502,9 +578,9 @@ export function OrgChartDesigner({
                         </div>
                       </div>
 
-                      {/* Card Control Bar on Hover */}
+                      {/* Card Control Bar - Visible on mobile, hover on desktop */}
                       {isEditing && (
-                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-0.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-0.5 rounded-full shadow-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
                           <button
                             type="button"
                             onClick={() => handleMoveMember(index, 'left')}

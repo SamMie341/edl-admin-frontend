@@ -2,6 +2,7 @@ import type {
   OrgChartStructure,
   OrgChartPersonNode,
 } from '../domain/org-chart-designer.types';
+import { getStorageUrl } from '@/core/infrastructure/http/axios-client';
 
 const STORAGE_KEY_PREFIX = 'edl_org_chart_data_';
 
@@ -45,10 +46,13 @@ export function loadOrgChartFromStorage(
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = src;
+    img.onerror = (err) => reject(err);
+    // If it's a relative path from backend storage, prepend full storage URL
+    img.src = src.startsWith('/uploads/') ? getStorageUrl(src) : src;
   });
 }
 
@@ -74,6 +78,74 @@ function roundRect(
   ctx.lineTo(x, y + radius);
   ctx.quadraticCurveTo(x, y, x + radius, y);
   ctx.closePath();
+}
+
+/**
+ * Draws avatar silhouette placeholder
+ */
+function drawAvatarPlaceholder(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+) {
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(x, y, w, h);
+
+  const cx = x + w / 2;
+  const cy = y + h * 0.42;
+  const r = Math.min(w, h) * 0.22;
+
+  ctx.fillStyle = '#cbd5e1';
+  // Head
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Shoulders
+  ctx.beginPath();
+  ctx.arc(cx, y + h * 0.95, r * 1.8, Math.PI, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * Wraps text into lines for canvas
+ */
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+): string[] {
+  if (!text) return [];
+  // Split on comma first if present
+  if (text.includes(',')) {
+    const parts = text.split(',');
+    return parts.map((p, i) => (i < parts.length - 1 ? `${p.trim()},` : p.trim()));
+  }
+
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = words[0] || '';
+
+  for (let i = 1; i < words.length; i++) {
+    const testLine = `${currentLine} ${words[i]}`;
+    if (ctx.measureText(testLine).width < maxWidth) {
+      currentLine = testLine;
+    } else {
+      lines.push(currentLine);
+      currentLine = words[i];
+    }
+  }
+  lines.push(currentLine);
+
+  // If still single long line without spaces, split by half
+  if (lines.length === 1 && lines[0].length > 32) {
+    const half = Math.floor(lines[0].length / 2);
+    return [lines[0].substring(0, half), lines[0].substring(half)];
+  }
+
+  return lines;
 }
 
 /**
@@ -165,15 +237,10 @@ export async function exportOrgChartToImageFile(
       const leaderImg = await loadImage(chart.leader.photoUrl);
       ctx.drawImage(leaderImg, photoX, photoY, photoW, photoH);
     } catch {
-      ctx.fillStyle = '#f1f5f9';
-      ctx.fillRect(photoX, photoY, photoW, photoH);
+      drawAvatarPlaceholder(ctx, photoX, photoY, photoW, photoH);
     }
   } else {
-    ctx.fillStyle = '#f1f5f9';
-    ctx.fillRect(photoX, photoY, photoW, photoH);
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = `14px ${fontSans}`;
-    ctx.fillText('ຮູບພາບ', photoX + photoW / 2, photoY + photoH / 2);
+    drawAvatarPlaceholder(ctx, photoX, photoY, photoW, photoH);
   }
   ctx.restore();
 
@@ -218,7 +285,7 @@ export async function exportOrgChartToImageFile(
   }
 
   // --- 4. Member Cards (Level 2) ---
-  const memberPillH = 46;
+  const memberPillH = 48;
   const memberCardH = 290;
   const memberPillY = crossbarY + 25;
   const memberCardY = memberPillY + memberPillH + 15;
@@ -242,20 +309,18 @@ export async function exportOrgChartToImageFile(
     ctx.fill();
     ctx.stroke();
 
-    // Department Badge Text (multiline wrap if needed)
+    // Department Badge Text (multiline wrap)
     ctx.textAlign = 'center';
     ctx.fillStyle = '#1e3a8a';
     ctx.font = `bold 9.5px ${fontSans}`;
     const badgeText = member.departmentBadge || 'ກຳມະການ';
-    if (badgeText.length > 30) {
-      const mid = Math.floor(badgeText.length / 2);
-      const splitIdx = badgeText.lastIndexOf(' ', mid) !== -1 ? badgeText.lastIndexOf(' ', mid) : mid;
-      const line1 = badgeText.substring(0, splitIdx).trim();
-      const line2 = badgeText.substring(splitIdx).trim();
-      ctx.fillText(line1, mCenterX, memberPillY + 16);
-      ctx.fillText(line2, mCenterX, memberPillY + 32);
+    const lines = wrapText(ctx, badgeText, cardWidth - 16);
+
+    if (lines.length >= 2) {
+      ctx.fillText(lines[0], mCenterX, memberPillY + 16);
+      ctx.fillText(lines[1], mCenterX, memberPillY + 32);
     } else {
-      ctx.fillText(badgeText, mCenterX, memberPillY + 23);
+      ctx.fillText(lines[0] || badgeText, mCenterX, memberPillY + 24);
     }
 
     // Line from pill to card
@@ -286,26 +351,21 @@ export async function exportOrgChartToImageFile(
         const mImg = await loadImage(member.photoUrl);
         ctx.drawImage(mImg, mPhotoX, mPhotoY, mPhotoW, mPhotoH);
       } catch {
-        ctx.fillStyle = '#f1f5f9';
-        ctx.fillRect(mPhotoX, mPhotoY, mPhotoW, mPhotoH);
+        drawAvatarPlaceholder(ctx, mPhotoX, mPhotoY, mPhotoW, mPhotoH);
       }
     } else {
-      ctx.fillStyle = '#f1f5f9';
-      ctx.fillRect(mPhotoX, mPhotoY, mPhotoW, mPhotoH);
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = `12px ${fontSans}`;
-      ctx.fillText('ຮູບພາບ', mPhotoX + mPhotoW / 2, mPhotoY + mPhotoH / 2);
+      drawAvatarPlaceholder(ctx, mPhotoX, mPhotoY, mPhotoW, mPhotoH);
     }
     ctx.restore();
 
     // Member Lao Name
     ctx.fillStyle = '#1e3a8a';
-    ctx.font = `bold 12.5px ${fontSans}`;
+    ctx.font = `bold 12px ${fontSans}`;
     ctx.fillText(member.nameLao || '', mCenterX, memberCardY + 192);
 
     // Member En Name
     ctx.fillStyle = '#475569';
-    ctx.font = `bold 9.5px ${fontSans}`;
+    ctx.font = `bold 9px ${fontSans}`;
     ctx.fillText(member.nameEn || '', mCenterX, memberCardY + 214);
 
     // Role Lao
@@ -321,13 +381,17 @@ export async function exportOrgChartToImageFile(
 
   // Convert canvas to Blob & File
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Failed to convert canvas to blob'));
-        return;
-      }
-      const file = new File([blob], fileName, { type: 'image/png' });
-      resolve(file);
-    }, 'image/png');
+    try {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('Failed to convert canvas to blob'));
+          return;
+        }
+        const file = new File([blob], fileName, { type: 'image/png' });
+        resolve(file);
+      }, 'image/png');
+    } catch (err) {
+      reject(err);
+    }
   });
 }

@@ -65,40 +65,40 @@ export function OrgStructurePreviewPage({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-130px)] space-y-3 animate-in fade-in-50 duration-200">
+    <div className="flex flex-col min-h-[calc(100vh-90px)] md:h-[calc(100vh-130px)] space-y-3 animate-in fade-in-50 duration-200">
       {/* 1. Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 px-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 sm:px-6 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={onBack}
-            className="h-9 px-3 rounded-xl border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 gap-1.5 cursor-pointer font-semibold text-xs"
+            className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 gap-1.5 cursor-pointer font-semibold text-xs shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>ກັບຄືນໜ້າລາຍການ</span>
+            <span className="hidden xs:inline">ກັບຄືນ</span>
           </Button>
 
-          <span className="h-5 w-px bg-slate-200 mx-1 hidden sm:block" />
+          <span className="h-5 w-px bg-slate-200 mx-0.5 hidden sm:block" />
 
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <Network className="h-5 w-5" />
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Network className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-slate-900 leading-tight">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">
                   {item.structureName}
                 </h1>
                 <span
-                  className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border ${typeConfig.color}`}
+                  className={`inline-block px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] font-bold border ${typeConfig.color}`}
                 >
                   {typeConfig.label}
                 </span>
                 <StatusBadge status={item.status} />
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
                 ລຳດັບ: #{item.orderIndex}
               </p>
             </div>
@@ -106,65 +106,67 @@ export function OrgStructurePreviewPage({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
           {chartData && item.imageUrl && (
-            <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200/80 text-xs font-bold">
+            <div className="flex items-center bg-slate-100 p-0.5 sm:p-1 rounded-xl sm:rounded-2xl border border-slate-200/80 text-xs font-bold">
               <button
                 type="button"
                 onClick={() => setViewTab('interactive')}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition cursor-pointer',
+                  'flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl transition cursor-pointer text-xs',
                   viewTab === 'interactive'
-                    ? 'bg-white text-blue-700 shadow-2xs'
+                    ? 'bg-white text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900'
                 )}
               >
                 <Layout className="h-3.5 w-3.5" />
-                <span>ແຜນຜັງໂຕ້ຕອບ</span>
+                <span>ແຜນຜັງ</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewTab('image')}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition cursor-pointer',
+                  'flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl transition cursor-pointer text-xs',
                   viewTab === 'image'
-                    ? 'bg-white text-blue-700 shadow-2xs'
+                    ? 'bg-white text-blue-700 shadow-2xs font-bold'
                     : 'text-slate-600 hover:text-slate-900'
                 )}
               >
                 <ImageIcon className="h-3.5 w-3.5" />
-                <span>ຮູບພາບຕົ້ນສະບັບ</span>
+                <span>ຮູບພາບ</span>
               </button>
             </div>
           )}
 
-          {item.imageUrl && (
-            <a
-              href={getStorageUrl(item.imageUrl)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-medium shadow-2xs transition"
-              title="ເປີດຮູບພາບຕົ້ນສະບັບ"
-            >
-              <span>ເບິ່ງຮູບເຕັມ</span>
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          )}
+          <div className="flex items-center gap-1.5 sm:gap-2 ml-auto sm:ml-0">
+            {item.imageUrl && (
+              <a
+                href={getStorageUrl(item.imageUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-medium shadow-2xs transition"
+                title="ເປີດຮູບພາບຕົ້ນສະບັບ"
+              >
+                <span>ເບິ່ງຮູບເຕັມ</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
 
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => onEdit(item)}
-            className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 cursor-pointer shadow-sm"
-          >
-            <Edit className="h-3.5 w-3.5" />
-            <span>ແກ້ໄຂໂຄງຮ່າງນີ້</span>
-          </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => onEdit(item)}
+              className="h-8 sm:h-9 px-3 sm:px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 cursor-pointer shadow-sm"
+            >
+              <Edit className="h-3.5 w-3.5" />
+              <span>ແກ້ໄຂ</span>
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* 2. Main Full-Screen Display Area */}
-      <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
+      <div className="flex-1 min-h-[420px] md:min-h-0 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
         {viewTab === 'interactive' && chartData ? (
           <OrgChartDesigner
             structure={chartData}

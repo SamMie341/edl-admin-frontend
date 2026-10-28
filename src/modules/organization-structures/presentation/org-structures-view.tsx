@@ -243,7 +243,7 @@ export function OrgStructuresView() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* 1. Filter Tabs by Structure Type */}
-      <div className="flex flex-wrap items-center gap-2 pb-1 border-b border-slate-200/50">
+      <div className="flex items-center gap-2 pb-2 overflow-x-auto no-scrollbar flex-nowrap sm:flex-wrap border-b border-slate-200/50">
         <button
           type="button"
           onClick={() => {
@@ -251,7 +251,7 @@ export function OrgStructuresView() {
             setPage(1);
           }}
           className={cn(
-            'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer',
+            'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0',
             selectedType === 'ALL'
               ? 'bg-blue-600 text-white shadow-2xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
@@ -271,7 +271,7 @@ export function OrgStructuresView() {
                 setPage(1);
               }}
               className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer',
+                'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0',
                 isActive
                   ? 'bg-blue-600 text-white shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
