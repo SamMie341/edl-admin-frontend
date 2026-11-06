@@ -7,3 +7,4 @@ export * from './file-uploader';
 export * from './status-badge';
 export * from './rich-text-editor';
 export * from './rich-text-renderer';
+export * from './permission-denied';

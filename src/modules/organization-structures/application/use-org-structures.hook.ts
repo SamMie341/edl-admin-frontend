@@ -90,3 +90,15 @@ export function useUploadOrgStructureImage() {
     },
   });
 }
+
+/**
+ * Hook ສຳລັບອັບໂຫຼດຮູບພາບປະຈຳຕົວບຸກຄະລາກອນໃນຜັງ (Upload Avatar)
+ */
+export function useUploadOrgStructureAvatar() {
+  return useMutation({
+    mutationFn: (file: File) => orgStructureApi.uploadAvatar(file),
+    onError: (error: any) => {
+      console.warn('Avatar upload API error:', error?.message);
+    },
+  });
+}

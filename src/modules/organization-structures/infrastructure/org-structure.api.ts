@@ -91,4 +91,20 @@ export const orgStructureApi = {
 
     return data.data;
   },
+
+  /**
+   * ອັບໂຫຼດຮູບພາບປະຈຳຕົວບຸກຄະລາກອນໃນຜັງ (POST /api/v1/org-structures/upload-avatar)
+   */
+  async uploadAvatar(
+    file: File
+  ): Promise<{ message: string; imagePath: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data } = await apiClient.post<
+      ApiResponse<{ message: string; imagePath: string }>
+    >(API_ENDPOINTS.ORG_STRUCTURES.UPLOAD_AVATAR, formData);
+
+    return data.data;
+  },
 };

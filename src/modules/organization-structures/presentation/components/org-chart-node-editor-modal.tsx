@@ -2,10 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { X, Upload, Trash2, User, Sparkles } from 'lucide-react';
+import { X, Upload, Trash2, User, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { OrgChartPersonNode } from '../../domain/org-chart-designer.types';
-import { compressAvatarImage } from '../../application/org-chart-canvas-exporter';
+import {
+  resolveAvatarUrl,
+  uploadOrProcessAvatar,
+} from '../../application/org-chart-canvas-exporter';
+import { toast } from 'sonner';
 
 interface OrgChartNodeEditorModalProps {
   node: OrgChartPersonNode | null;
@@ -28,6 +32,7 @@ export function OrgChartNodeEditorModal({
   const [roleEn, setRoleEn] = useState('');
   const [departmentBadge, setDepartmentBadge] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !node) return;
@@ -46,10 +51,15 @@ export function OrgChartNodeEditorModal({
     if (!file) return;
 
     try {
-      const compressed = await compressAvatarImage(file);
-      setPhotoUrl(compressed);
+      setIsUploading(true);
+      const photoPath = await uploadOrProcessAvatar(file);
+      setPhotoUrl(photoPath);
+      toast.success('ອັບໂຫຼດຮູບພາບສຳເລັດ');
     } catch (err) {
-      console.warn('Failed to compress avatar photo:', err);
+      console.warn('Failed to upload avatar photo:', err);
+      toast.error('ອັບໂຫຼດຮູບພາບບໍ່ສຳເລັດ');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -107,9 +117,14 @@ export function OrgChartNodeEditorModal({
             </label>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="relative h-28 w-24 rounded-2xl overflow-hidden border-2 border-amber-300 bg-slate-50 shadow-2xs flex items-center justify-center shrink-0">
-                {photoUrl ? (
+                {isUploading ? (
+                  <div className="flex flex-col items-center gap-1 text-blue-600">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span className="text-[10px] font-medium">ກຳລັງອັບໂຫຼດ...</span>
+                  </div>
+                ) : photoUrl ? (
                   <Image
-                    src={photoUrl}
+                    src={resolveAvatarUrl(photoUrl)}
                     alt="Photo"
                     fill
                     unoptimized
@@ -122,12 +137,21 @@ export function OrgChartNodeEditorModal({
 
               <div className="space-y-2 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-semibold cursor-pointer transition shadow-2xs text-xs">
-                    <Upload className="h-3.5 w-3.5" />
-                    <span>ອັບໂຫຼດຮູບພາບໃໝ່</span>
+                  <label
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-semibold cursor-pointer transition shadow-2xs text-xs ${
+                      isUploading ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                    <span>{isUploading ? 'ກຳລັງອັບໂຫຼດ...' : 'ອັບໂຫຼດຮູບພາບໃໝ່'}</span>
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={isUploading}
                       onChange={handlePhotoUpload}
                       className="hidden"
                     />

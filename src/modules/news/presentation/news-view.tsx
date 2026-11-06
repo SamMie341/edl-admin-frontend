@@ -26,6 +26,7 @@ import {
   useDeleteNews,
   useNewsCategories,
 } from '../application/use-news.hook';
+import { usePermission } from '@/core/application/use-permission.hook';
 import { NewsFormModal } from './components/news-form-modal';
 import { NewsDetailModal } from './components/news-detail-modal';
 import { getStorageUrl } from '@/core/infrastructure/http/axios-client';
@@ -34,6 +35,11 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export function NewsView() {
+  const { can } = usePermission();
+  const canCreate = can('NEWS', 'CREATE');
+  const canUpdate = can('NEWS', 'UPDATE');
+  const canDelete = can('NEWS', 'DELETE');
+
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined);
   const [selectedStatus, setSelectedStatus] = useState<NewsStatus | 'ALL'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
@@ -223,22 +229,26 @@ export function NewsView() {
           >
             <Eye className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onClick={() => handleEdit(row)}
-            title="ແກ້ໄຂຂ່າວ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeletingNews(row)}
-            title="ລຶບຂ່າວ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {canUpdate && (
+            <button
+              type="button"
+              onClick={() => handleEdit(row)}
+              title="ແກ້ໄຂຂ່າວ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => setDeletingNews(row)}
+              title="ລຶບຂ່າວ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -320,11 +330,15 @@ export function NewsView() {
           setLimit(l);
           setPage(1);
         }}
-        actionButton={{
-          label: 'ສ້າງຂ່າວສານໃໝ່',
-          icon: <Plus className="h-4 w-4" />,
-          onClick: handleCreate,
-        }}
+        actionButton={
+          canCreate
+            ? {
+                label: 'ສ້າງຂ່າວສານໃໝ່',
+                icon: <Plus className="h-4 w-4" />,
+                onClick: handleCreate,
+              }
+            : undefined
+        }
         extraActions={
           <Button
             variant="outline"

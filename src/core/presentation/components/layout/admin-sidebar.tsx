@@ -118,9 +118,32 @@ export function AdminSidebar() {
         <nav className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-5 space-y-5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
           {SIDEBAR_NAVIGATION.map((group) => {
             const visibleItems = group.items.filter((item) => {
-              if (!item.roles || item.roles.length === 0) return true;
-              if (!user?.role) return true;
-              return item.roles.includes(user.role as any);
+              if (!user) return false;
+              if (user.role === 'SUPERADMIN') return true;
+
+              // 1. ກວດສອບ Role ສະເພາະຂອງ Item
+              if (item.roles && item.roles.length > 0) {
+                if (!item.roles.includes(user.role as any)) {
+                  return false;
+                }
+              }
+
+              // 2. ກວດສອບສິດລະດັບ Module (PBAC)
+              if (item.module) {
+                const userPerms = user.permissions || [];
+                if (userPerms.length > 0) {
+                  return userPerms.some(
+                    (p) => p.module.toUpperCase() === item.module?.toUpperCase()
+                  );
+                }
+                // ກໍລະນີ Admin ທີ່ຍັງບໍ່ທັນຖືກກຳນົດສິດຍ່ອຍ ໃຫ້ສະແດງເມນູພື້ນຖານ
+                if (user.role === 'ADMIN') {
+                  return true;
+                }
+                return false;
+              }
+
+              return true;
             });
 
             if (visibleItems.length === 0) return null;

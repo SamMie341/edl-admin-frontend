@@ -31,9 +31,13 @@ import {
   DEFAULT_BLANK_PRESET,
   normalizeChartTiers,
 } from '../../domain/org-chart-designer.types';
-import { compressAvatarImage } from '../../application/org-chart-canvas-exporter';
+import {
+  resolveAvatarUrl,
+  uploadOrProcessAvatar,
+} from '../../application/org-chart-canvas-exporter';
 import { OrgChartNodeEditorModal } from './org-chart-node-editor-modal';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface OrgChartDesignerProps {
   structure: OrgChartStructure;
@@ -81,8 +85,8 @@ export function OrgChartDesigner({
     onChange({
       ...structure,
       tiers: newTiers,
-      leader: newTiers[0]?.nodes[0] || structure.leader,
-      members: newTiers.slice(1).flatMap((t) => t.nodes),
+      leader: undefined,
+      members: undefined,
     });
   };
 
@@ -232,16 +236,18 @@ export function OrgChartDesigner({
     if (!file || !targetId) return;
 
     try {
-      const compressedUrl = await compressAvatarImage(file);
+      const photoPath = await uploadOrProcessAvatar(file);
       const newTiers = tiers.map((t) => ({
         ...t,
         nodes: t.nodes.map((n) =>
-          n.id === targetId ? { ...n, photoUrl: compressedUrl } : n
+          n.id === targetId ? { ...n, photoUrl: photoPath } : n
         ),
       }));
       updateTiers(newTiers);
+      toast.success('ອັບໂຫຼດຮູບພາບສຳເລັດ');
     } catch (err) {
-      console.warn('Failed to upload compressed photo:', err);
+      console.warn('Failed to upload photo:', err);
+      toast.error('ອັບໂຫຼດຮູບພາບບໍ່ສຳເລັດ');
     }
     e.target.value = '';
   };
@@ -554,7 +560,7 @@ export function OrgChartDesigner({
                           <div className="relative h-44 w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
                             {node.photoUrl ? (
                               <Image
-                                src={node.photoUrl}
+                                src={resolveAvatarUrl(node.photoUrl)}
                                 alt={node.nameLao}
                                 fill
                                 unoptimized

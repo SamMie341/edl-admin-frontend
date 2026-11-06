@@ -77,3 +77,19 @@ export interface SyncServiceCenterResponse {
   total: number;
   data: any[];
 }
+
+export interface ServiceCenterQueryParams {
+  provinceId?: number;
+  page?: number;
+  limit?: number;
+}
+
+export interface ServiceCenterPaginatedResult {
+  data: ServiceCenterItem[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}

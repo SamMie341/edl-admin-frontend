@@ -9,36 +9,72 @@ import type {
   ProvinceItem,
   DistrictItem,
   VillageItem,
+  ServiceCenterQueryParams,
+  ServiceCenterPaginatedResult,
 } from '../domain/service-center.types';
 
 export const serviceCenterApi = {
   /**
-   * ດຶງລາຍຊື່ສູນບໍລິການທັງໝົດ (GET /api/v1/service-centers ຫຼື /service-centers/province/:provinceId)
+   * ດຶງລາຍຊື່ສູນບໍລິການ (GET /api/v1/service-centers ພ້ອມ params page, limit, provinceId)
    */
-  async getServiceCenters(provinceId?: number): Promise<ServiceCenterItem[]> {
-    try {
-      const url = provinceId
-        ? `/service-centers/province/${provinceId}`
-        : API_ENDPOINTS.SERVICE_CENTERS.BASE;
-      const { data } = await apiClient.get<ApiResponse<ServiceCenterItem[]>>(url);
-      return data.data;
-    } catch {
-      // Fallback query parameter
-      try {
-        const params = provinceId ? { provinceId } : undefined;
-        const { data } = await apiClient.get<ApiResponse<ServiceCenterItem[]>>(
-          API_ENDPOINTS.SERVICE_CENTERS.BASE,
-          { params }
-        );
-        return data.data;
-      } catch {
-        // Fallback fetch all to let client filter safely
-        const { data } = await apiClient.get<ApiResponse<ServiceCenterItem[]>>(
-          API_ENDPOINTS.SERVICE_CENTERS.BASE
-        );
-        return data.data;
-      }
+  async getServiceCenters(
+    params?: ServiceCenterQueryParams
+  ): Promise<ServiceCenterPaginatedResult> {
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 10;
+    const provinceId = params?.provinceId;
+
+    const queryParams: Record<string, any> = {
+      page,
+      limit,
+    };
+    if (provinceId) {
+      queryParams.provinceId = provinceId;
     }
+
+    const { data } = await apiClient.get<ApiResponse<any>>(
+      API_ENDPOINTS.SERVICE_CENTERS.BASE,
+      { params: queryParams }
+    );
+
+    const responseData = data.data;
+
+    // 1. Backend returns paginated object: { data: [...], meta: { total, page, limit, totalPages } }
+    if (responseData && Array.isArray(responseData.data)) {
+      return {
+        data: responseData.data,
+        meta: {
+          total: Number(responseData.meta?.total) || responseData.data.length,
+          page: Number(responseData.meta?.page) || page,
+          limit: Number(responseData.meta?.limit) || limit,
+          totalPages:
+            Number(responseData.meta?.totalPages) ||
+            Math.ceil((responseData.meta?.total || responseData.data.length) / limit) ||
+            1,
+        },
+      };
+    }
+
+    // 2. Direct array fallback (if older backend version): [...]
+    if (Array.isArray(responseData)) {
+      const total = responseData.length;
+      const start = (page - 1) * limit;
+      const paginatedList = responseData.slice(start, start + limit);
+      return {
+        data: paginatedList,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit) || 1,
+        },
+      };
+    }
+
+    return {
+      data: [],
+      meta: { total: 0, page: 1, limit, totalPages: 1 },
+    };
   },
 
   /**

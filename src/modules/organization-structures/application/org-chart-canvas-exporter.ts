@@ -5,6 +5,24 @@ import type {
 } from '../domain/org-chart-designer.types';
 import { normalizeChartTiers } from '../domain/org-chart-designer.types';
 import { getStorageUrl } from '@/core/infrastructure/http/axios-client';
+import { orgStructureApi } from '../infrastructure/org-structure.api';
+
+/**
+ * ແປງ path ຮູບພາບໃຫ້ເປັນ URL ທີ່ສາມາດໂຫຼດໄດ້
+ * ຮອງຮັບທັງ short file path (/uploads/...), data:image/base64, blob:, ແລະ full http URLs
+ */
+export function resolveAvatarUrl(url?: string | null): string {
+  if (!url) return '';
+  if (
+    url.startsWith('data:image/') ||
+    url.startsWith('blob:') ||
+    url.startsWith('http://') ||
+    url.startsWith('https://')
+  ) {
+    return url;
+  }
+  return getStorageUrl(url);
+}
 
 const STORAGE_KEY_PREFIX = 'edl_org_chart_data_';
 
@@ -53,7 +71,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     }
     img.onload = () => resolve(img);
     img.onerror = (err) => reject(err);
-    img.src = src.startsWith('/uploads/') ? getStorageUrl(src) : src;
+    img.src = resolveAvatarUrl(src);
   });
 }
 
@@ -394,13 +412,13 @@ export async function exportOrgChartToImageFile(
 
 /**
  * ບີບອັດ ແລະ ຫຍໍ້ຂະໜາດຮູບພາບ Portrait ຂອງບຸກຄະລາກອນ
- * ໃຫ້ເຫຼືອຂະໜາດນ້ອຍພຽງ ~10-25KB ປ້ອງກັນ Payload Too Large (500 Error)
+ * ໃຫ້ເຫຼືອຂະໜາດນ້ອຍພຽງ ~8-15KB ປ້ອງກັນ Payload Too Large (500 Error)
  */
 export async function compressAvatarImage(
   fileOrDataUrl: File | string,
-  maxWidth = 260,
-  maxHeight = 330,
-  quality = 0.8
+  maxWidth = 180,
+  maxHeight = 230,
+  quality = 0.72
 ): Promise<string> {
   if (typeof window === 'undefined') {
     return typeof fileOrDataUrl === 'string' ? fileOrDataUrl : '';
@@ -419,11 +437,11 @@ export async function compressAvatarImage(
     initialUrl = fileOrDataUrl;
   }
 
-  // If already a tiny SVG or external URL or already small data URL (< 35KB)
+  // If already a tiny SVG or external URL or already small data URL (< 15KB)
   if (
     !initialUrl.startsWith('data:image/') ||
     initialUrl.startsWith('data:image/svg') ||
-    initialUrl.length < 35000
+    initialUrl.length < 15000
   ) {
     return initialUrl;
   }
@@ -467,8 +485,71 @@ export async function compressAvatarImage(
 }
 
 /**
- * ກວດສອບ ແລະ ບີບອັດຮູບພາບທຸກຮູບໃນ Org Chart Structure
- * ເພື່ອປ້ອງກັນບໍ່ໃຫ້ JSON Payload ໃຫຍ່ເກີນຂະໜາດທີ່ Server ກຳນົດ
+ * Helper ສຳລັບອັບໂຫຼດຮູບພາບປະຈຳຕົວຂຶ້ນ Backend Server (/uploads/org-structures/avatars/...)
+ * ຖ້າ API ສຳເລັດຈະສົ່ງ path ສັ້ນກັບຄືນມາ (~45 ຕົວອັກສອນ)
+ * ຖ້າ backend ຍັງບໍ່ໄດ້ deploy endpoint ຫຼື offline ຈະ fallback ໃຊ້ compressed Base64 (~8-12KB)
+ */
+export async function uploadOrProcessAvatar(
+  fileOrUrl: File | string
+): Promise<string> {
+  if (!fileOrUrl) return '';
+
+  // 1. ຖ້າເປັນ path ຂອງ Server ຢູ່ແລ້ວ ຫຼື full URL
+  if (typeof fileOrUrl === 'string') {
+    if (
+      fileOrUrl.startsWith('/uploads/') ||
+      fileOrUrl.startsWith('http://') ||
+      fileOrUrl.startsWith('https://')
+    ) {
+      return fileOrUrl;
+    }
+  }
+
+  // 2. ຖ້າເປັນ File object: ອັບໂຫຼດຂຶ້ນ Server ກ່ອນ
+  if (fileOrUrl instanceof File) {
+    try {
+      const res = await orgStructureApi.uploadAvatar(fileOrUrl);
+      if (res?.imagePath) {
+        return res.imagePath;
+      }
+    } catch (err) {
+      console.warn(
+        'Avatar upload endpoint failed, falling back to local compression:',
+        err
+      );
+    }
+    // Fallback: ບີບອັດເປັນ base64 ຂະໜາດນ້ອຍ
+    return await compressAvatarImage(fileOrUrl);
+  }
+
+  // 3. ຖ້າເປັນ Base64 data URL: ແປງເປັນ File ແລ້ວອັບໂຫຼດຂຶ້ນ Server ເພື່ອຫຼຸດ payload
+  if (typeof fileOrUrl === 'string' && fileOrUrl.startsWith('data:image/')) {
+    try {
+      const res = await fetch(fileOrUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `avatar-${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+      });
+      const uploadRes = await orgStructureApi.uploadAvatar(file);
+      if (uploadRes?.imagePath) {
+        return uploadRes.imagePath;
+      }
+    } catch (err) {
+      console.warn(
+        'Base64 auto-upload failed, falling back to local compression:',
+        err
+      );
+    }
+    // Fallback: ບີບອັດໃຫ້ເຫຼືອ < 12KB
+    return await compressAvatarImage(fileOrUrl);
+  }
+
+  return fileOrUrl;
+}
+
+/**
+ * ກວດສອບ ແລະ ປ່ຽນຮູບພາບທຸກຮູບໃນ Org Chart Structure ໃຫ້ເປັນ URL ສັ້ນ
+ * ພ້ອມຕັດ duplicate keys (leader/members) ເພື່ອຫຼຸດຂະໜາດ JSON Payload ລົງເຫຼືອພຽງບໍ່ເທົ່າໃດ KB
  */
 export async function sanitizeChartStructure(
   structure: OrgChartStructure
@@ -479,25 +560,21 @@ export async function sanitizeChartStructure(
 
   for (const tier of tiers) {
     for (const node of tier.nodes) {
-      if (node.photoUrl && node.photoUrl.startsWith('data:image/')) {
-        // Compress if larger than ~35KB
-        if (node.photoUrl.length > 35000) {
-          try {
-            node.photoUrl = await compressAvatarImage(node.photoUrl);
-          } catch (e) {
-            console.warn('Failed to sanitize node photo:', e);
-          }
+      if (node.photoUrl) {
+        try {
+          node.photoUrl = await uploadOrProcessAvatar(node.photoUrl);
+        } catch (e) {
+          console.warn('Failed to sanitize node photo:', e);
         }
       }
     }
   }
 
   cloned.tiers = tiers;
-  if (cloned.leader?.photoUrl && cloned.leader.photoUrl.startsWith('data:image/')) {
-    if (cloned.leader.photoUrl.length > 35000) {
-      cloned.leader.photoUrl = await compressAvatarImage(cloned.leader.photoUrl);
-    }
-  }
+
+  // ຕັດ duplicate keys (leader ແລະ members) ອອກ ເພື່ອຫຼຸດຂະໜາດ Payload ລົງ 50%
+  delete cloned.leader;
+  delete cloned.members;
 
   return cloned;
 }

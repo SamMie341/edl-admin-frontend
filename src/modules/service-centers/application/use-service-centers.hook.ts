@@ -4,14 +4,20 @@ import { serviceCenterApi } from '../infrastructure/service-center.api';
 import type {
   CreateServiceCenterPayload,
   UpdateServiceCenterPayload,
+  ServiceCenterQueryParams,
 } from '../domain/service-center.types';
 
 export const SERVICE_CENTERS_QUERY_KEY = ['service-centers'];
 
-export function useServiceCenters(provinceId?: number) {
+export function useServiceCenters(
+  params?: ServiceCenterQueryParams | number
+) {
+  const normalizedParams: ServiceCenterQueryParams =
+    typeof params === 'number' ? { provinceId: params } : params || {};
+
   return useQuery({
-    queryKey: [...SERVICE_CENTERS_QUERY_KEY, provinceId],
-    queryFn: () => serviceCenterApi.getServiceCenters(provinceId),
+    queryKey: [...SERVICE_CENTERS_QUERY_KEY, normalizedParams],
+    queryFn: () => serviceCenterApi.getServiceCenters(normalizedParams),
   });
 }
 

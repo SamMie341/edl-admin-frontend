@@ -1,12 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Sparkles,
   Upload,
   Layout,
-  Layers,
-  CheckCircle2,
 } from 'lucide-react';
 import { FormModal, FileUploader } from '@/core/presentation/components/shared';
 import {
@@ -245,8 +242,8 @@ export function OrgStructureFormModal({
         isExporting
           ? 'ກຳລັງສ້າງຮູບແຜນຜັງ...'
           : isEdit
-          ? 'ບັນທຶກໂຄງຮ່າງ'
-          : 'ສ້າງໂຄງຮ່າງ'
+            ? 'ບັນທຶກໂຄງຮ່າງ'
+            : 'ສ້າງໂຄງຮ່າງ'
       }
       isSubmitting={isSubmitting}
     >

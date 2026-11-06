@@ -13,6 +13,7 @@ import {
   useDepartments,
   useDeleteDepartment,
 } from '../application/use-departments.hook';
+import { usePermission } from '@/core/application/use-permission.hook';
 import { DepartmentFormModal } from './components/department-form-modal';
 import type { DepartmentItem } from '../domain/department.types';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,11 @@ import { cn } from '@/lib/utils';
 export function DepartmentsView() {
   const { data: departments = [], isLoading, refetch, isRefetching } = useDepartments();
   const deleteMutation = useDeleteDepartment();
+  const { can } = usePermission();
+
+  const canCreate = can('DEPARTMENTS', 'CREATE');
+  const canUpdate = can('DEPARTMENTS', 'UPDATE');
+  const canDelete = can('DEPARTMENTS', 'DELETE');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -108,22 +114,26 @@ export function DepartmentsView() {
       className: 'w-[120px] text-right',
       cell: (row) => (
         <div className="flex items-center justify-end gap-1">
-          <button
-            type="button"
-            onClick={() => handleEdit(row)}
-            title="ແກ້ໄຂຊື່ຝ່າຍ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeletingDept(row)}
-            title="ລຶບຝ່າຍ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {canUpdate && (
+            <button
+              type="button"
+              onClick={() => handleEdit(row)}
+              title="ແກ້ໄຂຊື່ຝ່າຍ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => setDeletingDept(row)}
+              title="ລຶບຝ່າຍ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -146,11 +156,15 @@ export function DepartmentsView() {
           setLimit(l);
           setPage(1);
         }}
-        actionButton={{
-          label: 'ເພີ່ມຝ່າຍໃໝ່',
-          icon: <Plus className="h-4 w-4" />,
-          onClick: handleCreate,
-        }}
+        actionButton={
+          canCreate
+            ? {
+                label: 'ເພີ່ມຝ່າຍໃໝ່',
+                icon: <Plus className="h-4 w-4" />,
+                onClick: handleCreate,
+              }
+            : undefined
+        }
         extraActions={
           <Button
             variant="outline"

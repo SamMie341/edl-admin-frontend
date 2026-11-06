@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
   Shield,
+  ShieldCheck,
   KeyRound,
   Trash2,
   UserPlus,
@@ -17,6 +18,7 @@ import {
   DataTable,
   StatusBadge,
   ConfirmModal,
+  PermissionDenied,
   type ColumnDef,
 } from '@/core/presentation/components/shared';
 import { Button } from '@/components/ui/button';
@@ -24,8 +26,10 @@ import {
   useUsers,
   useDeleteUser,
 } from '../application/use-users.hook';
+import { usePermission } from '@/core/application/use-permission.hook';
 import { SyncUserModal } from './components/sync-user-modal';
 import { EditRoleModal } from './components/edit-role-modal';
+import { AssignPermissionsModal } from './components/assign-permissions-modal';
 import { ChangePasswordModal } from './components/change-password-modal';
 import type { UserItem, UserRole } from '../domain/user.types';
 import { cn } from '@/lib/utils';
@@ -33,6 +37,11 @@ import { cn } from '@/lib/utils';
 export function UsersView() {
   const { data: users = [], isLoading, refetch, isRefetching } = useUsers();
   const deleteMutation = useDeleteUser();
+  const { can, isSuperAdmin } = usePermission();
+
+  const canCreateUser = can('USERS', 'CREATE');
+  const canUpdateUser = can('USERS', 'UPDATE');
+  const canDeleteUser = can('USERS', 'DELETE');
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +50,7 @@ export function UsersView() {
   // Modals state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [editingRoleUser, setEditingRoleUser] = useState<UserItem | null>(null);
+  const [assigningPermissionsUser, setAssigningPermissionsUser] = useState<UserItem | null>(null);
   const [changingPasswordUser, setChangingPasswordUser] = useState<UserItem | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserItem | null>(null);
 
@@ -153,7 +163,7 @@ export function UsersView() {
       ),
     },
     {
-      header: 'ສິດທິ (Role)',
+      header: 'ສິດທິ (Role & Permissions)',
       cell: (user) => {
         const roleLabels: Record<string, { label: string; variant: any }> = {
           SUPERADMIN: { label: 'Super Admin', variant: 'danger' },
@@ -162,7 +172,22 @@ export function UsersView() {
           STAFF: { label: 'Staff', variant: 'default' },
         };
         const r = roleLabels[user.role] || { label: user.role, variant: 'default' };
-        return <StatusBadge label={r.label} variant={r.variant} />;
+        const permCount = user.userPermissions?.length || 0;
+
+        return (
+          <div className="space-y-1">
+            <StatusBadge label={r.label} variant={r.variant} />
+            {user.role === 'SUPERADMIN' ? (
+              <span className="block text-[10px] text-amber-600 font-semibold">
+                ທຸກສິດ (Bypass)
+              </span>
+            ) : (
+              <span className="block text-[10px] text-slate-400 font-medium">
+                {permCount > 0 ? `${permCount} ສິດທິ` : 'ຍັງບໍ່ມີສິດ'}
+              </span>
+            )}
+          </div>
+        );
       },
     },
     {
@@ -182,18 +207,32 @@ export function UsersView() {
     },
     {
       header: <span className="text-right block pr-2">ຈັດການ</span>,
-      className: 'w-[140px] text-right',
+      className: 'w-[160px] text-right',
       cell: (user) => (
         <div className="flex items-center justify-end gap-1">
+          {/* Assign Permissions Button */}
+          {canUpdateUser && (
+            <button
+              type="button"
+              onClick={() => setAssigningPermissionsUser(user)}
+              title="ກຳນົດສິດການນຳໃຊ້ (Permissions)"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition cursor-pointer"
+            >
+              <ShieldCheck className="h-4 w-4" />
+            </button>
+          )}
+
           {/* Edit Role Button */}
-          <button
-            type="button"
-            onClick={() => setEditingRoleUser(user)}
-            title="ປ່ຽນສິດທິ / ສະຖານະ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-          >
-            <Shield className="h-4 w-4" />
-          </button>
+          {canUpdateUser && (
+            <button
+              type="button"
+              onClick={() => setEditingRoleUser(user)}
+              title="ປ່ຽນສິດທິ / ສະຖານະ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+            >
+              <Shield className="h-4 w-4" />
+            </button>
+          )}
 
           {/* Change Password Button */}
           <button
@@ -206,18 +245,30 @@ export function UsersView() {
           </button>
 
           {/* Delete User Button */}
-          <button
-            type="button"
-            onClick={() => setDeletingUser(user)}
-            title="ລຶບບັນຊີຜູ້ໃຊ້"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {canDeleteUser && (
+            <button
+              type="button"
+              onClick={() => setDeletingUser(user)}
+              title="ລຶບບັນຊີຜູ້ໃຊ້"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       ),
     },
   ];
+
+  // ກວດສອບສິດການເຂົ້າເຖິງໂມດູນ Users (USERS:READ ຫຼື SuperAdmin)
+  if (!can('USERS', 'READ')) {
+    return (
+      <PermissionDenied
+        moduleName="ຈັດການຜູ້ໃຊ້ງານ & IAM (USERS)"
+        message="ທ່ານບໍ່ມີສິດໃນການເບິ່ງ ຫຼື ຄຸ້ມຄອງຂໍ້ມູນຜູ້ໃຊ້ງານໃນລະບົບ (ຕ້ອງການສິດ USERS:READ ຫຼື SUPERADMIN)"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -282,11 +333,15 @@ export function UsersView() {
           setLimit(l);
           setPage(1);
         }}
-        actionButton={{
-          label: 'ຊິ້ງຂໍ້ມູນຈາກ HRM',
-          icon: <UserPlus className="h-4 w-4" />,
-          onClick: () => setIsSyncModalOpen(true),
-        }}
+        actionButton={
+          canCreateUser
+            ? {
+                label: 'ຊິ້ງຂໍ້ມູນຈາກ HRM',
+                icon: <UserPlus className="h-4 w-4" />,
+                onClick: () => setIsSyncModalOpen(true),
+              }
+            : undefined
+        }
         extraActions={
           <Button
             variant="outline"
@@ -311,21 +366,28 @@ export function UsersView() {
         />
       )}
 
-      {/* 4. Edit Role & Status Modal */}
+      {/* 4. Assign Permissions Modal */}
+      <AssignPermissionsModal
+        user={assigningPermissionsUser}
+        isOpen={Boolean(assigningPermissionsUser)}
+        onClose={() => setAssigningPermissionsUser(null)}
+      />
+
+      {/* 5. Edit Role & Status Modal */}
       <EditRoleModal
         user={editingRoleUser}
         isOpen={Boolean(editingRoleUser)}
         onClose={() => setEditingRoleUser(null)}
       />
 
-      {/* 5. Change Password Modal */}
+      {/* 6. Change Password Modal */}
       <ChangePasswordModal
         user={changingPasswordUser}
         isOpen={Boolean(changingPasswordUser)}
         onClose={() => setChangingPasswordUser(null)}
       />
 
-      {/* 6. Delete Confirmation Modal */}
+      {/* 7. Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={Boolean(deletingUser)}
         onClose={() => setDeletingUser(null)}

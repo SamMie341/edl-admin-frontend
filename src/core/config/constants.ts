@@ -11,6 +11,8 @@ export const API_ENDPOINTS = {
     CHANGE_ROLE: (id: number) => `/users/change-role/${id}`,
     CHANGE_PASSWORD: (id: number) => `/users/change-password/${id}`,
     BY_ID: (id: number) => `/users/${id}`,
+    PERMISSIONS_LIST: '/users/permissions/list',
+    PERMISSIONS: (id: number) => `/users/${id}/permissions`,
   },
   DEPARTMENTS: {
     BASE: '/departments',
@@ -50,6 +52,7 @@ export const API_ENDPOINTS = {
     DROPDOWN: '/org-structures/dropdown',
     BY_ID: (id: number) => `/org-structures/${id}`,
     UPLOAD_IMAGE: (id: number) => `/org-structures/${id}/upload/image`,
+    UPLOAD_AVATAR: '/org-structures/upload-avatar',
   },
   VISION_MISSIONS: {
     BASE: '/vision-missions',

@@ -28,6 +28,7 @@ import {
   useDeleteBranch,
   useSyncBranches,
 } from '../application/use-branches.hook';
+import { usePermission } from '@/core/application/use-permission.hook';
 import { useDepartments } from '@/modules/departments/application/use-departments.hook';
 import { BranchFormModal } from './components/branch-form-modal';
 import { BranchDetailModal } from './components/branch-detail-modal';
@@ -72,6 +73,11 @@ export function BranchesView() {
   const { data: branches = [], isLoading, refetch, isRefetching } = useBranches(selectedDeptId);
   const deleteMutation = useDeleteBranch();
   const syncMutation = useSyncBranches();
+  const { can } = usePermission();
+
+  const canCreate = can('BRANCHES', 'CREATE');
+  const canUpdate = can('BRANCHES', 'UPDATE');
+  const canDelete = can('BRANCHES', 'DELETE');
 
   // Search & Modals state
   const [searchTerm, setSearchTerm] = useState('');
@@ -255,22 +261,26 @@ export function BranchesView() {
           >
             <Eye className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onClick={() => handleEdit(row)}
-            title="ແກ້ໄຂສາຂາ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeletingBranch(row)}
-            title="ລຶບສາຂາ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {canUpdate && (
+            <button
+              type="button"
+              onClick={() => handleEdit(row)}
+              title="ແກ້ໄຂສາຂາ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => setDeletingBranch(row)}
+              title="ລຶບສາຂາ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -333,25 +343,31 @@ export function BranchesView() {
           setLimit(l);
           setPage(1);
         }}
-        actionButton={{
-          label: 'ເພີ່ມສາຂາໃໝ່',
-          icon: <Plus className="h-4 w-4" />,
-          onClick: handleCreate,
-        }}
+        actionButton={
+          canCreate
+            ? {
+                label: 'ເພີ່ມສາຂາໃໝ່',
+                icon: <Plus className="h-4 w-4" />,
+                onClick: handleCreate,
+              }
+            : undefined
+        }
         extraActions={
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsSyncConfirmOpen(true)}
-              disabled={syncMutation.isPending}
-              className="h-9 px-3.5 rounded-xl text-xs gap-1.5 border-slate-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100/60 cursor-pointer"
-            >
-              <RefreshCw
-                className={cn('h-3.5 w-3.5', syncMutation.isPending && 'animate-spin')}
-              />
-              <span>ຊິ້ງຈາກ Inside API</span>
-            </Button>
+            {canCreate && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSyncConfirmOpen(true)}
+                disabled={syncMutation.isPending}
+                className="h-9 px-3.5 rounded-xl text-xs gap-1.5 border-slate-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100/60 cursor-pointer"
+              >
+                <RefreshCw
+                  className={cn('h-3.5 w-3.5', syncMutation.isPending && 'animate-spin')}
+                />
+                <span>ຊິ້ງຈາກ Inside API</span>
+              </Button>
+            )}
 
             <Button
               variant="outline"

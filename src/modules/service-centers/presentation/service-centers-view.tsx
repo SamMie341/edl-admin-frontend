@@ -64,12 +64,34 @@ function getServiceCenterMapUrl(
 export function ServiceCentersView() {
   const [selectedProvinceId, setSelectedProvinceId] = useState<number | undefined>(undefined);
   const { data: provinces = [] } = useProvinces();
+
+  // Pagination with server-side page and limit
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  const queryParams = useMemo(
+    () => ({
+      page,
+      limit,
+      provinceId: selectedProvinceId,
+    }),
+    [page, limit, selectedProvinceId]
+  );
+
   const {
-    data: centers = [],
+    data: result,
     isLoading,
     refetch,
     isRefetching,
-  } = useServiceCenters(selectedProvinceId);
+  } = useServiceCenters(queryParams);
+
+  const centers = result?.data || [];
+  const paginationMeta = result?.meta || {
+    total: centers.length,
+    page,
+    limit,
+    totalPages: Math.ceil(centers.length / limit) || 1,
+  };
 
   const deleteMutation = useDeleteServiceCenter();
   const syncMutation = useSyncServiceCenters();
@@ -81,41 +103,16 @@ export function ServiceCentersView() {
   const [deletingCenter, setDeletingCenter] = useState<ServiceCenterItem | null>(null);
   const [isSyncConfirmOpen, setIsSyncConfirmOpen] = useState(false);
 
-  // Pagination
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-
   const handleSearchChange = useCallback((val: string) => {
     setSearchTerm(val);
-    setPage(1);
   }, []);
 
-  // Filtered centers by province and search
-  const filteredData = useMemo(() => {
-    const selectedProv = provinces.find((p) => p.id === selectedProvinceId);
+  // Filtered centers for search term
+  const displayData = useMemo(() => {
+    if (!searchTerm) return centers;
+    const term = searchTerm.toLowerCase();
 
     return centers.filter((c) => {
-      // 1. ກັ່ນຕອງຕາມແຂວງ
-      if (selectedProvinceId !== undefined) {
-        const matchesId =
-          c.provinceId === selectedProvinceId ||
-          c.province?.id === selectedProvinceId ||
-          Number(c.provinceId) === Number(selectedProvinceId) ||
-          Number(c.province?.id) === Number(selectedProvinceId);
-
-        const matchesName =
-          Boolean(selectedProv?.name) &&
-          Boolean(c.province?.name) &&
-          c.province!.name.trim().toLowerCase() === selectedProv!.name.trim().toLowerCase();
-
-        if (!matchesId && !matchesName) {
-          return false;
-        }
-      }
-
-      // 2. ຄົ້ນຫາຕາມຄຳສັບ
-      if (!searchTerm) return true;
-      const term = searchTerm.toLowerCase();
       const name = (c.centerName || '').toLowerCase();
       const branchName = (c.branch?.branchName || '').toLowerCase();
       const prov = (c.province?.name || '').toLowerCase();
@@ -132,19 +129,7 @@ export function ServiceCentersView() {
         phone.includes(term)
       );
     });
-  }, [centers, searchTerm, selectedProvinceId, provinces]);
-
-  const paginatedData = useMemo(() => {
-    const start = (page - 1) * limit;
-    return filteredData.slice(start, start + limit);
-  }, [filteredData, page, limit]);
-
-  const paginationMeta = {
-    total: filteredData.length,
-    page,
-    limit,
-    totalPages: Math.ceil(filteredData.length / limit) || 1,
-  };
+  }, [centers, searchTerm]);
 
   const handleEdit = (center: ServiceCenterItem) => {
     setSelectedCenter(center);
@@ -347,7 +332,7 @@ export function ServiceCentersView() {
         title="ສູນບໍລິການລູກຄ້າ ຟຟລ (Service Centers)"
         description="ຄຸ້ມຄອງສູນບໍລິການລູກຄ້າໄຟຟ້າຂັ້ນເມືອງ/ບ້ານ, ພິກັດແຜນທີ່ GPS ແລະ ຊິ້ງຂໍ້ມູນຈາກ Inside API"
         columns={columns}
-        data={paginatedData}
+        data={displayData}
         isLoading={isLoading}
         searchPlaceholder="ຄົ້ນຫາສູນ, ສາຂາ, ແຂວງ, ເມືອງ..."
         searchValue={searchTerm}
