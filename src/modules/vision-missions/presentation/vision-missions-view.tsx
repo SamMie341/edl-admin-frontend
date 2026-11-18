@@ -26,6 +26,7 @@ import {
 import { VisionMissionFormModal } from './components/vision-mission-form-modal';
 import { VisionMissionDetailModal } from './components/vision-mission-detail-modal';
 import { getStorageUrl } from '@/core/infrastructure/http/axios-client';
+import { usePermission } from '@/core/application/use-permission.hook';
 import type {
   VisionMissionItem,
   VisionMissionType,
@@ -35,6 +36,11 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export function VisionMissionsView() {
+  const { can } = usePermission();
+  const canCreate = can('VISION_MISSIONS', 'CREATE');
+  const canUpdate = can('VISION_MISSIONS', 'UPDATE');
+  const canDelete = can('VISION_MISSIONS', 'DELETE');
+
   const { data: items = [], isLoading, refetch, isRefetching } = useVisionMissions();
   const deleteMutation = useDeleteVisionMission();
 
@@ -193,22 +199,26 @@ export function VisionMissionsView() {
           >
             <Eye className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onClick={() => handleEdit(row)}
-            title="ແກ້ໄຂຂໍ້ມູນ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeletingItem(row)}
-            title="ລຶບຂໍ້ມູນ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {canUpdate && (
+            <button
+              type="button"
+              onClick={() => handleEdit(row)}
+              title="ແກ້ໄຂຂໍ້ມູນ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => setDeletingItem(row)}
+              title="ລຶບຂໍ້ມູນ"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -273,11 +283,15 @@ export function VisionMissionsView() {
           setLimit(l);
           setPage(1);
         }}
-        actionButton={{
-          label: 'ສ້າງຂໍ້ມູນໃໝ່',
-          icon: <Plus className="h-4 w-4" />,
-          onClick: handleCreate,
-        }}
+        actionButton={
+          canCreate
+            ? {
+                label: 'ສ້າງຂໍ້ມູນໃໝ່',
+                icon: <Plus className="h-4 w-4" />,
+                onClick: handleCreate,
+              }
+            : undefined
+        }
         extraActions={
           <Button
             variant="outline"
@@ -300,7 +314,7 @@ export function VisionMissionsView() {
           item={viewingItem}
           isOpen={Boolean(viewingItem)}
           onClose={() => setViewingItem(null)}
-          onEdit={(item) => handleEdit(item)}
+          onEdit={canUpdate ? (item) => handleEdit(item) : undefined}
         />
       )}
 

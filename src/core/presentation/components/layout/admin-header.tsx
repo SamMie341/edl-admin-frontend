@@ -26,7 +26,7 @@ export function AdminHeader() {
   };
 
   return (
-    <header className="h-16 sm:h-20 border-b border-slate-200/60 bg-white/75 backdrop-blur-xl px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+    <header className="h-16 sm:h-20 shrink-0 border-b border-slate-200/60 bg-white/75 backdrop-blur-xl px-4 sm:px-8 flex items-center justify-between z-30 shadow-xs">
       {/* Left: Mobile Menu Toggle / Desktop Toggle + Title */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile Hamburger Menu Button */}
@@ -85,7 +85,11 @@ export function AdminHeader() {
               </p>
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
                 <Shield className="h-3 w-3 text-blue-600" />
-                <span className="font-semibold text-blue-700">{user.role}</span>
+                <span className="font-semibold text-blue-700">
+                  {typeof user.role === 'object' && user.role !== null
+                    ? (user.role as any).name
+                    : user.role}
+                </span>
                 {user.department && (
                   <span className="truncate max-w-[140px]">• {user.department}</span>
                 )}

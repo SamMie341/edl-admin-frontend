@@ -1,10 +1,16 @@
 export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'EDITOR' | 'STAFF';
 
-export type UserStatus = 'ACTIVE' | 'INACTIVE';
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
 export interface UserPermissionItem {
+  id?: number;
   module: string;
   action: string;
+}
+
+export interface AuthUserPermissionRelation {
+  effect?: 'ALLOW' | 'DENY';
+  permission: UserPermissionItem;
 }
 
 export interface AuthUser {
@@ -13,10 +19,16 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   department: string | null;
+  departmentName?: string | null;
   division: string | null;
+  divisionName?: string | null;
   unit: string | null;
+  unitName?: string | null;
   role: UserRole | string;
+  status?: UserStatus | string;
   permissions?: UserPermissionItem[];
+  deniedPermissions?: UserPermissionItem[];
+  userPermissions?: AuthUserPermissionRelation[];
 }
 
 export interface LoginPayload {

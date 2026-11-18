@@ -16,6 +16,7 @@ import {
   useSyncProvinces,
 } from '../../application/use-locations.hook';
 import { SyncConfirmModal } from './sync-confirm-modal';
+import { usePermission } from '@/core/application/use-permission.hook';
 import type { ProvinceItem } from '../../domain/location.types';
 
 interface ProvinceTabProps {
@@ -23,6 +24,9 @@ interface ProvinceTabProps {
 }
 
 export function ProvinceTab({ onViewDistricts }: ProvinceTabProps) {
+  const { can } = usePermission();
+  const canSync = can('PROVINCES', 'CREATE') || can('PROVINCES', 'UPDATE');
+
   const { data: provinces = [], isLoading, refetch, isRefetching } = useProvinces();
   const syncMutation = useSyncProvinces();
 
@@ -177,19 +181,21 @@ export function ProvinceTab({ onViewDistricts }: ProvinceTabProps) {
               <span className="hidden sm:inline">ໂຫຼດຄືນໃໝ່</span>
             </Button>
 
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setSyncModalOpen(true)}
-              disabled={syncMutation.isPending}
-              className="cursor-pointer gap-1.5 text-xs h-8.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${syncMutation.isPending ? 'animate-spin' : ''
-                  }`}
-              />
-              <span>ຊິ້ງຂໍ້ມູນແຂວງ</span>
-            </Button>
+            {canSync && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setSyncModalOpen(true)}
+                disabled={syncMutation.isPending}
+                className="cursor-pointer gap-1.5 text-xs h-8.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${syncMutation.isPending ? 'animate-spin' : ''
+                    }`}
+                />
+                <span>ຊິ້ງຂໍ້ມູນແຂວງ</span>
+              </Button>
+            )}
           </div>
         }
       />

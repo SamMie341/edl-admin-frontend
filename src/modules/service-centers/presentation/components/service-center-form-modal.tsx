@@ -383,6 +383,7 @@ export function ServiceCenterFormModal({
                 className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 cursor-pointer"
               >
                 <option value="ACTIVE">ເປີດບໍລິການປົກກະຕິ (Active)</option>
+                <option value="TEMPORARILY_CLOSED">ປິດຊົ່ວຄາວ (Temporarily Closed)</option>
                 <option value="INACTIVE">ປິດບໍລິການ (Inactive)</option>
               </select>
             </div>

@@ -1,4 +1,4 @@
-export type ServiceCenterStatus = 'ACTIVE' | 'INACTIVE';
+export type ServiceCenterStatus = 'ACTIVE' | 'INACTIVE' | 'TEMPORARILY_CLOSED';
 
 export interface ServiceCenterItem {
   id: number;

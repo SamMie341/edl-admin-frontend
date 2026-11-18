@@ -20,11 +20,17 @@ import {
   useDeleteNewsTag,
 } from '../application/use-news.hook';
 import { NewsTagModal } from './components/news-tag-modal';
+import { usePermission } from '@/core/application/use-permission.hook';
 import type { NewsTagItem } from '../domain/news.types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export function NewsTagsView() {
+  const { can } = usePermission();
+  const canCreate = can('NEWS_TAGS', 'CREATE');
+  const canUpdate = can('NEWS_TAGS', 'UPDATE');
+  const canDelete = can('NEWS_TAGS', 'DELETE');
+
   const { data: tags = [], isLoading, refetch, isRefetching } = useNewsTags();
   const deleteMutation = useDeleteNewsTag();
 
@@ -111,30 +117,38 @@ export function NewsTagsView() {
         </span>
       ),
     },
-    {
-      header: <span className="text-right block pr-2">ຈັດການ</span>,
-      className: 'w-[120px] text-right',
-      cell: (row) => (
-        <div className="flex items-center justify-end gap-1">
-          <button
-            type="button"
-            onClick={() => handleEdit(row)}
-            title="ແກ້ໄຂແທັກ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeletingTag(row)}
-            title="ລຶບແທັກ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ),
-    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            header: <span className="text-right block pr-2">ຈັດການ</span>,
+            className: 'w-[120px] text-right',
+            cell: (row: NewsTagItem) => (
+              <div className="flex items-center justify-end gap-1">
+                {canUpdate && (
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(row)}
+                    title="ແກ້ໄຂແທັກ"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setDeletingTag(row)}
+                    title="ລຶບແທັກ"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -155,11 +169,15 @@ export function NewsTagsView() {
           setLimit(l);
           setPage(1);
         }}
-        actionButton={{
-          label: 'ສ້າງແທັກໃໝ່',
-          icon: <Plus className="h-4 w-4" />,
-          onClick: handleCreate,
-        }}
+        actionButton={
+          canCreate
+            ? {
+                label: 'ສ້າງແທັກໃໝ່',
+                icon: <Plus className="h-4 w-4" />,
+                onClick: handleCreate,
+              }
+            : undefined
+        }
         extraActions={
           <Button
             variant="outline"

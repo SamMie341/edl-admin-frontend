@@ -29,6 +29,7 @@ import {
 } from '../application/use-service-centers.hook';
 import { ServiceCenterFormModal } from './components/service-center-form-modal';
 import { getStorageUrl } from '@/core/infrastructure/http/axios-client';
+import { usePermission } from '@/core/application/use-permission.hook';
 import type { ServiceCenterItem } from '../domain/service-center.types';
 import { cn } from '@/lib/utils';
 
@@ -66,6 +67,11 @@ export function ServiceCentersView() {
   const { data: provinces = [] } = useProvinces();
 
   // Pagination with server-side page and limit
+  const { can } = usePermission();
+  const canCreate = can('SERVICE_CENTERS', 'CREATE');
+  const canUpdate = can('SERVICE_CENTERS', 'UPDATE');
+  const canDelete = can('SERVICE_CENTERS', 'DELETE');
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -250,30 +256,38 @@ export function ServiceCentersView() {
       header: 'ສະຖານະ',
       cell: (row) => <StatusBadge status={row.status} />,
     },
-    {
-      header: <span className="text-right block pr-2">ຈັດການ</span>,
-      className: 'w-[120px] text-right',
-      cell: (row) => (
-        <div className="flex items-center justify-end gap-1">
-          <button
-            type="button"
-            onClick={() => handleEdit(row)}
-            title="ແກ້ໄຂສູນບໍລິການ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeletingCenter(row)}
-            title="ລຶບສູນບໍລິການ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ),
-    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            header: <span className="text-right block pr-2">ຈັດການ</span>,
+            className: 'w-[120px] text-right',
+            cell: (row: ServiceCenterItem) => (
+              <div className="flex items-center justify-end gap-1">
+                {canUpdate && (
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(row)}
+                    title="ແກ້ໄຂສູນບໍລິການ"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setDeletingCenter(row)}
+                    title="ລຶບສູນບໍລິການ"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -343,25 +357,31 @@ export function ServiceCentersView() {
           setLimit(l);
           setPage(1);
         }}
-        actionButton={{
-          label: 'ເພີ່ມສູນບໍລິການໃໝ່',
-          icon: <Plus className="h-4 w-4" />,
-          onClick: handleCreate,
-        }}
+        actionButton={
+          canCreate
+            ? {
+                label: 'ເພີ່ມສູນບໍລິການໃໝ່',
+                icon: <Plus className="h-4 w-4" />,
+                onClick: handleCreate,
+              }
+            : undefined
+        }
         extraActions={
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsSyncConfirmOpen(true)}
-              disabled={syncMutation.isPending}
-              className="h-9 px-3.5 rounded-xl text-xs gap-1.5 border-slate-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100/60 cursor-pointer"
-            >
-              <RefreshCw
-                className={cn('h-3.5 w-3.5', syncMutation.isPending && 'animate-spin')}
-              />
-              <span>ຊິ້ງຈາກ Inside API</span>
-            </Button>
+            {(canCreate || canUpdate) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSyncConfirmOpen(true)}
+                disabled={syncMutation.isPending}
+                className="h-9 px-3.5 rounded-xl text-xs gap-1.5 border-slate-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100/60 cursor-pointer"
+              >
+                <RefreshCw
+                  className={cn('h-3.5 w-3.5', syncMutation.isPending && 'animate-spin')}
+                />
+                <span>ຊິ້ງຈາກ Inside API</span>
+              </Button>
+            )}
 
             <Button
               variant="outline"

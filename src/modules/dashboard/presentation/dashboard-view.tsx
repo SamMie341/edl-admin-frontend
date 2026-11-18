@@ -1,17 +1,52 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SIDEBAR_NAVIGATION } from '@/core/config/navigation';
 import { useAuthStore } from '@/modules/auth/application/auth.store';
-import { ArrowUpRight, Sparkles, Database, Layers, Radio } from 'lucide-react';
+import {
+  getAuthUserRole,
+  checkUserModuleAccess,
+} from '@/core/application/use-permission.hook';
+import { ArrowUpRight, Sparkles, Database, Layers, Radio, ShieldAlert } from 'lucide-react';
 
 export function DashboardView() {
   const user = useAuthStore((state) => state.user);
 
-  const allModules = SIDEBAR_NAVIGATION.flatMap((group) =>
-    group.items.filter((item) => item.href !== '/dashboard')
-  );
+  const userRole = getAuthUserRole(user?.role);
+  const isSuperAdmin = userRole === 'SUPERADMIN';
+
+  // ກັ່ນຕອງສະເພາະໂມດູນທີ່ຜູ້ໃຊ້ມີສິດເຂົ້າເຖິງ (PBAC & RBAC)
+  const visibleModules = useMemo(() => {
+    return SIDEBAR_NAVIGATION.flatMap((group) =>
+      group.items.filter((item) => {
+        if (item.href === '/dashboard') return false;
+        if (!user) return false;
+
+        // 1. ກວດສອບສິດລະດັບ Module (PBAC) ຖ້າມີການກຳນົດ module ຫຼື modules
+        if (item.modules && item.modules.length > 0) {
+          return item.modules.some((m) => checkUserModuleAccess(user, m));
+        }
+
+        if (item.module) {
+          return checkUserModuleAccess(user, item.module);
+        }
+
+        if (isSuperAdmin) return true;
+
+        // 2. ກວດສອບ Role ສະເພາະຖ້າບໍ່ມີ module
+        if (item.roles && item.roles.length > 0) {
+          const roleMatch = item.roles.some(
+            (r) => r.toUpperCase() === userRole.toUpperCase()
+          );
+          if (!roleMatch) return false;
+        }
+
+        return true;
+      })
+    );
+  }, [user, userRole, isSuperAdmin]);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -77,8 +112,12 @@ export function DashboardView() {
             <Layers className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">ຈຳນວນໂມດູນ</p>
-            <p className="text-2xl font-bold text-slate-800">20 ໂມດູນ</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              {isSuperAdmin ? 'ຈຳນວນໂມດູນທັງໝົດ' : 'ໂມດູນທີ່ມີສິດເຂົ້າເຖິງ'}
+            </p>
+            <p className="text-2xl font-bold text-slate-800">
+              {visibleModules.length} ໂມດູນ
+            </p>
           </div>
         </div>
 
@@ -108,41 +147,61 @@ export function DashboardView() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-slate-800 tracking-tight">
-              ລາຍການໂມດູນທັງໝົດໃນລະບົບ ({allModules.length})
+              {isSuperAdmin
+                ? `ລາຍການໂມດູນທັງໝົດໃນລະບົບ (${visibleModules.length})`
+                : `ລາຍການໂມດູນທີ່ທ່ານມີສິດເຂົ້າເຖິງ (${visibleModules.length})`}
             </h2>
             <p className="text-xs text-slate-400">
-              ຄລິກທີ່ໂມດູນເພື່ອເຂົ້າສູ່ໜ້າບໍລິຫານຈັດການຂໍ້ມູນ (CRUD & Media Upload)
+              {visibleModules.length > 0
+                ? 'ຄລິກທີ່ໂມດູນເພື່ອເຂົ້າສູ່ໜ້າບໍລິຫານຈັດການຂໍ້ມູນ (CRUD & Media Upload)'
+                : 'ບັນຊີຂອງທ່ານຍັງບໍ່ທັນໄດ້ຮັບສິດເຂົ້າເຖິງໂມດູນໃດໆ ກະລຸນາຕິດຕໍ່ Super Admin ເພື່ອກຳນົດສິດການນຳໃຊ້'}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {allModules.map((mod) => {
-            const Icon = mod.icon;
-            return (
-              <Link
-                key={mod.href}
-                href={mod.href}
-                className="group relative p-4 rounded-2xl bg-white/75 backdrop-blur-lg border border-slate-200/50 shadow-2xs hover:shadow-md hover:border-blue-400/40 hover:bg-white transition-all duration-200 flex items-start justify-between"
-              >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="h-11 w-11 rounded-xl bg-blue-50/70 text-blue-600 flex items-center justify-center group-hover:bg-gradient-to-tr group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white transition-all duration-200 shadow-2xs shrink-0">
-                    <Icon className="h-5 w-5" />
+        {visibleModules.length === 0 ? (
+          <div className="p-10 rounded-3xl bg-white/75 backdrop-blur-xl border border-slate-200/60 text-center space-y-3.5 shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200/60 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
+              <ShieldAlert className="w-7 h-7" />
+            </div>
+            <div className="space-y-1 max-w-md mx-auto">
+              <h3 className="text-sm font-bold text-slate-800">
+                ຍັງບໍ່ມີໂມດູນທີ່ທ່ານໄດ້ຮັບສິດເຂົ້າເຖິງ
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                ບັນຊີຂອງທ່ານຍັງບໍ່ທັນໄດ້ຮັບການກຳນົດສິດການນຳໃຊ້ໂມດູນໃດໆໃນລະບົບ ກະລຸນາຕິດຕໍ່ຜູ້ບໍລິຫານ (Super Admin) ເພື່ອກຳນົດສິດການນຳໃຊ້ໃຫ້ກັບບັນຊີຂອງທ່ານ.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {visibleModules.map((mod) => {
+              const Icon = mod.icon;
+              return (
+                <Link
+                  key={mod.href}
+                  href={mod.href}
+                  className="group relative p-4 rounded-2xl bg-white/75 backdrop-blur-lg border border-slate-200/50 shadow-2xs hover:shadow-md hover:border-blue-400/40 hover:bg-white transition-all duration-200 flex items-start justify-between"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="h-11 w-11 rounded-xl bg-blue-50/70 text-blue-600 flex items-center justify-center group-hover:bg-gradient-to-tr group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white transition-all duration-200 shadow-2xs shrink-0">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-semibold text-slate-700 group-hover:text-blue-700 transition-colors truncate">
+                        {mod.title}
+                      </h3>
+                      <p className="text-[11px] font-mono text-slate-400 truncate mt-0.5">
+                        {mod.href}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="text-xs font-semibold text-slate-700 group-hover:text-blue-700 transition-colors truncate">
-                      {mod.title}
-                    </h3>
-                    <p className="text-[11px] font-mono text-slate-400 truncate mt-0.5">
-                      {mod.href}
-                    </p>
-                  </div>
-                </div>
-                <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200 shrink-0" />
-              </Link>
-            );
-          })}
-        </div>
+                  <ArrowUpRight className="h-4 w-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200 shrink-0" />
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

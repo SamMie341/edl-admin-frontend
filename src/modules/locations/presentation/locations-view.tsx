@@ -17,11 +17,26 @@ import {
 import { ProvinceTab } from './components/province-tab';
 import { DistrictTab } from './components/district-tab';
 import { VillageTab } from './components/village-tab';
+import { usePermission } from '@/core/application/use-permission.hook';
 import type { LocationTabType } from '../domain/location.types';
 import { cn } from '@/lib/utils';
 
 export function LocationsView() {
+  const { canAccessModule } = usePermission();
+  const canProvinces = canAccessModule('PROVINCES');
+  const canDistricts = canAccessModule('DISTRICTS');
+  const canVillages = canAccessModule('VILLAGES');
+
   const [activeTab, setActiveTab] = useState<LocationTabType>('provinces');
+
+  const accessibleTabs: LocationTabType[] = [
+    ...(canProvinces ? ['provinces' as const] : []),
+    ...(canDistricts ? ['districts' as const] : []),
+    ...(canVillages ? ['villages' as const] : []),
+  ];
+  const effectiveTab = accessibleTabs.includes(activeTab)
+    ? activeTab
+    : accessibleTabs[0] ?? 'provinces';
 
   // Shared drill-down filters across tabs
   const [drillDownProvinceId, setDrillDownProvinceId] = useState<number | undefined>(
@@ -101,56 +116,62 @@ export function LocationsView() {
 
       {/* 2. Modern Tab Segmented Control */}
       <div className="flex items-center gap-2 border-b border-slate-200 bg-white/60 backdrop-blur-md p-1.5 rounded-2xl shadow-2xs">
-        <button
-          type="button"
-          onClick={() => setActiveTab('provinces')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer',
-            activeTab === 'provinces'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-          )}
-        >
-          <MapPin className="h-4 w-4" />
-          <span>1. ລາຍການແຂວງ</span>
-        </button>
+        {canProvinces && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('provinces')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer',
+              effectiveTab === 'provinces'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+            )}
+          >
+            <MapPin className="h-4 w-4" />
+            <span>1. ລາຍການແຂວງ</span>
+          </button>
+        )}
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('districts')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer',
-            activeTab === 'districts'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-          )}
-        >
-          <Building2 className="h-4 w-4" />
-          <span>2. ລາຍການເມືອງ</span>
-        </button>
+        {canDistricts && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('districts')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer',
+              effectiveTab === 'districts'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+            )}
+          >
+            <Building2 className="h-4 w-4" />
+            <span>2. ລາຍການເມືອງ</span>
+          </button>
+        )}
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('villages')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer',
-            activeTab === 'villages'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-          )}
-        >
-          <Home className="h-4 w-4" />
-          <span>3. ລາຍການບ້ານ</span>
-        </button>
+        {canVillages && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('villages')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all cursor-pointer',
+              effectiveTab === 'villages'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+            )}
+          >
+            <Home className="h-4 w-4" />
+            <span>3. ລາຍການບ້ານ</span>
+          </button>
+        )}
       </div>
 
       {/* 3. Active Tab Content */}
       <div className="transition-all duration-200">
-        {activeTab === 'provinces' && (
+        {effectiveTab === 'provinces' && canProvinces && (
           <ProvinceTab onViewDistricts={handleViewDistricts} />
         )}
 
-        {activeTab === 'districts' && (
+        {effectiveTab === 'districts' && canDistricts && (
           <DistrictTab
             selectedProvinceId={drillDownProvinceId}
             onProvinceChange={setDrillDownProvinceId}
@@ -158,7 +179,7 @@ export function LocationsView() {
           />
         )}
 
-        {activeTab === 'villages' && (
+        {effectiveTab === 'villages' && canVillages && (
           <VillageTab
             initialProvinceId={drillDownProvinceId}
             initialDistrictId={drillDownDistrictId}

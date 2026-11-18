@@ -361,7 +361,7 @@ export function NewsView() {
           news={viewingNews}
           isOpen={Boolean(viewingNews)}
           onClose={() => setViewingNews(null)}
-          onEdit={(item) => handleEdit(item)}
+          onEdit={canUpdate ? (item) => handleEdit(item) : undefined}
         />
       )}
 

@@ -12,7 +12,7 @@ export type StatusVariant =
 
 interface StatusBadgeProps {
   status?: string | null;
-  label?: string;
+  label?: React.ReactNode;
   variant?: StatusVariant;
   className?: string;
 }
@@ -23,18 +23,29 @@ export function StatusBadge({
   variant,
   className,
 }: StatusBadgeProps) {
-  const normalizedStatus = (status || '').toUpperCase();
+  let resolvedLabel = label;
+  if (resolvedLabel && typeof resolvedLabel === 'object' && !React.isValidElement(resolvedLabel)) {
+    if ('label' in (resolvedLabel as any) && typeof (resolvedLabel as any).label === 'string') {
+      resolvedLabel = (resolvedLabel as any).label;
+    } else if ('name' in (resolvedLabel as any) && typeof (resolvedLabel as any).name === 'string') {
+      resolvedLabel = (resolvedLabel as any).name;
+    } else {
+      resolvedLabel = String(resolvedLabel);
+    }
+  }
+
+  const normalizedStatus = (typeof status === 'string' ? status : '').toUpperCase();
 
   // Automatic variant detection if not explicitly passed
   let resolvedVariant: StatusVariant = variant || 'default';
   if (!variant) {
-    if (['ACTIVE', 'PUBLISHED', 'COMPLETED', 'SUCCESS', 'APPROVED'].includes(normalizedStatus)) {
+    if (['ACTIVE', 'PUBLISHED', 'OPEN', 'AWARDED', 'COMPLETED', 'SUCCESS', 'APPROVED'].includes(normalizedStatus)) {
       resolvedVariant = 'active';
-    } else if (['INACTIVE', 'REJECTED', 'DISABLED', 'EXPIRED'].includes(normalizedStatus)) {
+    } else if (['INACTIVE', 'SUSPENDED', 'CANCELLED', 'REJECTED', 'DISABLED', 'EXPIRED'].includes(normalizedStatus)) {
       resolvedVariant = 'danger';
-    } else if (['PENDING', 'DRAFT', 'UNDER_MAINTENANCE', 'PROCESSING'].includes(normalizedStatus)) {
+    } else if (['PENDING', 'DRAFT', 'UNDER_MAINTENANCE', 'TEMPORARILY_CLOSED', 'PROCESSING'].includes(normalizedStatus)) {
       resolvedVariant = 'warning';
-    } else if (['INFO', 'NEW'].includes(normalizedStatus)) {
+    } else if (['INFO', 'NEW', 'CLOSED', 'ARCHIVED', 'HISTORICAL'].includes(normalizedStatus)) {
       resolvedVariant = 'info';
     }
   }
@@ -71,7 +82,7 @@ export function StatusBadge({
   };
 
   const style = variantStyles[resolvedVariant];
-  const displayLabel = label || status || '-';
+  const displayLabel = resolvedLabel ?? (status || '-');
 
   return (
     <span

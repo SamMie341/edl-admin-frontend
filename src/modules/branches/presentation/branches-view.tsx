@@ -391,7 +391,7 @@ export function BranchesView() {
           branch={viewingBranch}
           isOpen={Boolean(viewingBranch)}
           onClose={() => setViewingBranch(null)}
-          onEdit={(b) => handleEdit(b)}
+          onEdit={canUpdate ? (b) => handleEdit(b) : undefined}
         />
       )}
 

@@ -21,11 +21,17 @@ import {
   useDeleteNewsCategory,
 } from '../application/use-news.hook';
 import { NewsCategoryModal } from './components/news-category-modal';
+import { usePermission } from '@/core/application/use-permission.hook';
 import type { NewsCategoryItem } from '../domain/news.types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export function NewsCategoriesView() {
+  const { can } = usePermission();
+  const canCreate = can('NEWS_CATEGORIES', 'CREATE');
+  const canUpdate = can('NEWS_CATEGORIES', 'UPDATE');
+  const canDelete = can('NEWS_CATEGORIES', 'DELETE');
+
   const { data: categories = [], isLoading, refetch, isRefetching } = useNewsCategories();
   const deleteMutation = useDeleteNewsCategory();
 
@@ -127,30 +133,38 @@ export function NewsCategoriesView() {
         </span>
       ),
     },
-    {
-      header: <span className="text-right block pr-2">ຈັດການ</span>,
-      className: 'w-[120px] text-right',
-      cell: (row) => (
-        <div className="flex items-center justify-end gap-1">
-          <button
-            type="button"
-            onClick={() => handleEdit(row)}
-            title="ແກ້ໄຂໝວດໝູ່"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeletingCategory(row)}
-            title="ລຶບໝວດໝູ່"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ),
-    },
+    ...(canUpdate || canDelete
+      ? [
+          {
+            header: <span className="text-right block pr-2">ຈັດການ</span>,
+            className: 'w-[120px] text-right',
+            cell: (row: NewsCategoryItem) => (
+              <div className="flex items-center justify-end gap-1">
+                {canUpdate && (
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(row)}
+                    title="ແກ້ໄຂໝວດໝູ່"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() => setDeletingCategory(row)}
+                    title="ລຶບໝວດໝູ່"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -171,11 +185,15 @@ export function NewsCategoriesView() {
           setLimit(l);
           setPage(1);
         }}
-        actionButton={{
-          label: 'ສ້າງໝວດໝູ່ໃໝ່',
-          icon: <Plus className="h-4 w-4" />,
-          onClick: handleCreate,
-        }}
+        actionButton={
+          canCreate
+            ? {
+                label: 'ສ້າງໝວດໝູ່ໃໝ່',
+                icon: <Plus className="h-4 w-4" />,
+                onClick: handleCreate,
+              }
+            : undefined
+        }
         extraActions={
           <Button
             variant="outline"

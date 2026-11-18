@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { userApi } from '../infrastructure/user.api';
-import { useAuthStore } from '@/modules/auth/application/auth.store';
+import { PROFILE_QUERY_KEY } from '@/modules/auth/application/use-profile.hook';
 import type {
   UpdateUserRolePayload,
   ChangePasswordPayload,
@@ -10,6 +10,7 @@ import type {
 
 export const USERS_QUERY_KEY = ['users'];
 export const PERMISSIONS_LIST_QUERY_KEY = ['permissions', 'list'];
+export const USER_PERMISSIONS_QUERY_KEY = (id: number) => ['users', 'permissions', id];
 
 /**
  * Hook สำหรับดึงรายชื่อผู้ใช้ทั้งหมด
@@ -33,12 +34,21 @@ export function usePermissionsList() {
 }
 
 /**
- * Hook สำหรับกำหนดสิทธิ์ให้กับผู้ใช้งาน (Assign Permissions)
+ * Hook สำหรับดึงสิทธิ์จาก Role, ALLOW, DENY และสิทธิ์สุทธิของผู้ใช้ตาม ID
+ */
+export function useUserPermissions(id: number | null | undefined) {
+  return useQuery({
+    queryKey: USER_PERMISSIONS_QUERY_KEY(id ?? 0),
+    queryFn: () => userApi.getUserPermissions(id!),
+    enabled: Boolean(id),
+  });
+}
+
+/**
+ * Hook สำหรับกำหนดสิทธิ์ให้กับผู้ใช้งาน (Assign Permissions: ALLOW / DENY)
  */
 export function useAssignPermissions() {
   const queryClient = useQueryClient();
-  const currentUser = useAuthStore.getState().user;
-  const updateUser = useAuthStore.getState().updateUser;
 
   return useMutation({
     mutationFn: ({
@@ -51,15 +61,8 @@ export function useAssignPermissions() {
     onSuccess: (data, variables) => {
       toast.success(data?.message || 'ກຳນົດສິດການນຳໃຊ້ສຳເລັດແລ້ວ');
       queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
-
-      // หากเป็นการแก้ไขสิทธิ์ของตัวเอง ให้อัปเดต auth store ทันทีโดยไม่ต้องล็อกอินใหม่
-      if (currentUser && currentUser.id === variables.id && data?.user?.userPermissions) {
-        const flatPermissions = data.user.userPermissions.map((up) => ({
-          module: up.permission.module,
-          action: up.permission.action,
-        }));
-        updateUser({ permissions: flatPermissions });
-      }
+      queryClient.invalidateQueries({ queryKey: USER_PERMISSIONS_QUERY_KEY(variables.id) });
+      queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
     },
     onError: (error: any) => {
       toast.error(error?.message || 'ກຳນົດສິດການນຳໃຊ້ບໍ່ສຳເລັດ');
@@ -97,6 +100,7 @@ export function useUpdateUserRole() {
     onSuccess: () => {
       toast.success('ອັບເດດສິດທິຜູ້ໃຊ້ງານສຳເລັດແລ້ວ');
       queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
     },
     onError: (error: any) => {
       toast.error(error?.message || 'ອັບເດດສິດທິຜູ້ໃຊ້ງານບໍ່ສຳເລັດ');

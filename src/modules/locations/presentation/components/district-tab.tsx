@@ -16,6 +16,7 @@ import {
   useSyncDistricts,
 } from '../../application/use-locations.hook';
 import { SyncConfirmModal } from './sync-confirm-modal';
+import { usePermission } from '@/core/application/use-permission.hook';
 import type { DistrictItem } from '../../domain/location.types';
 
 interface DistrictTabProps {
@@ -29,6 +30,9 @@ export function DistrictTab({
   onProvinceChange,
   onViewVillages,
 }: DistrictTabProps) {
+  const { can } = usePermission();
+  const canSync = can('DISTRICTS', 'CREATE') || can('DISTRICTS', 'UPDATE');
+
   const { data: provinces = [] } = useProvinces();
   const {
     data: districts = [],
@@ -249,20 +253,22 @@ export function DistrictTab({
               <span className="hidden sm:inline">ໂຫຼດຄືນໃໝ່</span>
             </Button>
 
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setSyncModalOpen(true)}
-              disabled={syncMutation.isPending}
-              className="cursor-pointer gap-1.5 text-xs h-8.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${
-                  syncMutation.isPending ? 'animate-spin' : ''
-                }`}
-              />
-              <span>ຊິ້ງຂໍ້ມູນເມືອງ (Sync HRM)</span>
-            </Button>
+            {canSync && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setSyncModalOpen(true)}
+                disabled={syncMutation.isPending}
+                className="cursor-pointer gap-1.5 text-xs h-8.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${
+                    syncMutation.isPending ? 'animate-spin' : ''
+                  }`}
+                />
+                <span>ຊິ້ງຂໍ້ມູນເມືອງ (Sync HRM)</span>
+              </Button>
+            )}
           </div>
         }
       />

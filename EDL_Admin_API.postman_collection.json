@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "e4d1a001-ed1a-4d1a-8000-000000000001",
     "name": "EDL Admin Management System API",
-    "description": "Postman Collection ສຳລັບທົດສອບລະບົບ EDL Admin Backend API (NestJS Clean Architecture)\n\n### ຄຸນສົມບັດຫຼັກ:\n- ຮອງຮັບທຸກ Module: Auth, Users, Departments, Branches, Service Centers, Provinces, Districts, Villages, Organization Structures, Vision & Missions, Electrical Knowledge, Magazines, News Categories, News, News Tags, Legislations, Electricity Tariffs, Procurements, Positions, Job Postings (ລວມ 20 Modules, 112 Endpoints)\n- ລະບົບ Auto JWT: ເມື່ອ Login ສຳເລັດ ລະບົບຈະບັນທຶກ `accessToken` ລົງ Collection Variables ອັດຕະໂນມັດ ເພື່ອໃຊ້ກັບ Endpoint ອື່ນໆໄດ້ທັນທີ\n- URL Prefix: `http://localhost:3000/api/v1` (ປັບປ່ຽນໄດ້ຜ່ານຕົວປ່ຽນ `baseUrl`)",
+    "description": "Postman Collection ສຳລັບທົດສອບລະບົບ EDL Admin Backend API (NestJS Clean Architecture)\n\n### ຄຸນສົມບັດຫຼັກ:\n- ຮອງຮັບທຸກ Module: Auth, Users, Departments, Branches, Service Centers, Provinces, Districts, Villages, Organization Structures, Vision & Missions, Electrical Knowledge, Magazines, News Categories, News, News Tags, Legislations, Electricity Tariffs, Procurements, Positions, Job Postings, Roles, Electricity Calculator (ລວມ 22 Modules, 153 Endpoints)\n- ລະບົບ Auto JWT: ເມື່ອ Login ສຳເລັດ ລະບົບຈະບັນທຶກ `accessToken` ລົງ Collection Variables ອັດຕະໂນມັດ ເພື່ອໃຊ້ກັບ Endpoint ອື່ນໆໄດ້ທັນທີ\n- URL Prefix: `http://localhost:3000/api/v1` (ປັບປ່ຽນໄດ້ຜ່ານຕົວປ່ຽນ `baseUrl`)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -81,6 +81,25 @@
               ]
             },
             "description": "ເຂົ້າສູ່ລະບົບດ້ວຍລະຫັດພະນັກງານ (empCode) ແລະ ລະຫັດຜ່ານ (password)\n*ໝາຍເຫດ: ເມື່ອ Login ສຳເລັດ Postman ຈະບັນທຶກ JWT Token ເຂົ້າ Collection Variable ໂດຍອັດຕະໂນມັດ*"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User Profile (ດຶງຂໍ້ມູນໂປຣໄຟລ໌ຜູ້ໃຊ້ປັດຈຸບັນ)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "ດຶງຂໍ້ມູນ Profile ຂອງຜູ້ໃຊ້ງານທີ່ກຳລັງ Login ຢູ່ປັດຈຸບັນ (ອີງຕາມ JWT Access Token)"
           },
           "response": []
         }
@@ -228,6 +247,33 @@
           "response": []
         },
         {
+          "name": "Get User Permissions (ດຶງສິດຂອງຜູ້ໃຊ້ງານຕາມ ID)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":id",
+                "permissions"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID ຂອງຜູ້ໃຊ້ງານ"
+                }
+              ]
+            },
+            "description": "ດຶງສິດຈາກ Role, ສິດທີ່ເພີ່ມເຕີມ (ALLOW), ສິດທີ່ຖືກປິດ (DENY), ແລະ ສິດທິສຸດທິ (effectivePermissions) ຂອງຜູ້ໃຊ້ງານ"
+          },
+          "response": []
+        },
+        {
           "name": "Assign Permissions (ກຳນົດສິດໃຫ້ຜູ້ໃຊ້ງານ)",
           "request": {
             "method": "PUT",
@@ -239,7 +285,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"permissionIds\": [\n    1,\n    2,\n    3\n  ]\n}"
+              "raw": "{\n  \"permissionIds\": [\n    1,\n    2,\n    3\n  ],\n  \"deniedPermissionIds\": [\n    4\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/users/:id/permissions",
@@ -259,7 +305,7 @@
                 }
               ]
             },
-            "description": "ກຳນົດສິດ (Permissions) ໃຫ້ກັບຜູ້ໃຊ້ງານແຕ່ລະຄົນ"
+            "description": "ກຳນົດສິດເພີ່ມເຕີມ (permissionIds) ແລະ ປິດ/ຫັກສິດອອກຈາກ Role ສະເພາະບຸກຄົນ (deniedPermissionIds)"
           },
           "response": []
         },
@@ -1308,6 +1354,35 @@
               ]
             },
             "description": "ອັບໂຫຼດຮູບພາບໂຄງຮ່າງອົງກອນ"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Personnel Avatar (ອັບໂຫຼດຮູບປະຈຳຕົວບຸກຄະລາກອນ)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "ເລືອກໄຟລ໌ຮູບພາບປະຈຳຕົວ (JPG, PNG, WEBP)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/org-structures/upload-avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "org-structures",
+                "upload-avatar"
+              ]
+            },
+            "description": "ອັບໂຫຼດຮູບພາບປະຈຳຕົວຂອງບຸກຄະລາກອນ (ເຊັ່ນ: ຮູບຜູ້ບໍລິຫານ/ພະນັກງານໃນໂຄງຮ່າງ) ໄປທີ່ /uploads/org-structures/avatars/"
           },
           "response": []
         }
@@ -3467,6 +3542,1092 @@
             "description": "ອັບໂຫຼດຮູບພາບສຳລັບປະກາດຮັບສະໝັກງານ"
           },
           "response": []
+        }
+      ]
+    },
+    {
+      "name": "21. Roles",
+      "description": "ໂມດູນຈັດການບົດບາດ ແລະ ສິດທິການເຂົ້າເຖິງລະບົບ (Role-Based Access Control)",
+      "item": [
+        {
+          "name": "Get All Roles (ດຶງລາຍຊື່ບົດບາດທັງໝົດ)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles?search=&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "ຄົ້ນຫາຕາມຊື່ ຫຼື ຄຳອະທິບາຍ"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "ໜ້າທີ່ຕ້ອງການ"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "ຈຳນວນຕໍ່ໜ້າ"
+                }
+              ]
+            },
+            "description": "ດຶງລາຍຊື່ບົດບາດທັງໝົດ ພ້ອມ Pagination ແລະ ຄົ້ນຫາ"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Roles Dropdown (ດຶງບົດບາດແບບ Dropdown)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/dropdown",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "dropdown"
+              ]
+            },
+            "description": "ດຶງລາຍຊື່ບົດບາດແບບຫຍໍ້ສຳລັບສະແດງໃນ Dropdown (id, name)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Role By ID (ດຶງຂໍ້ມູນບົດບາດຕາມ ID)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID ຂອງ Role"
+                }
+              ]
+            },
+            "description": "ດຶງຂໍ້ມູນບົດບາດຕາມ ID ພ້ອມລາຍການສິດທິ (Permissions) ແລະ ຈຳນວນຜູ້ໃຊ້ງານ"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Role (ສ້າງບົດບາດໃໝ່)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HR_MANAGER\",\n  \"description\": \"ຜູ້ຈັດການຝ່າຍບຸກຄະລາກອນ\",\n  \"permissionIds\": [\n    1,\n    2,\n    3\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "description": "ສ້າງບົດບາດໃໝ່ ພ້ອມກຳນົດສິດທິ (permissionIds)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Role (ແກ້ໄຂບົດບາດ)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HR_ADMIN\",\n  \"description\": \"ແກ້ໄຂລາຍລະອຽດບົດບາດ\",\n  \"permissionIds\": [\n    1,\n    2\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID ຂອງ Role"
+                }
+              ]
+            },
+            "description": "ແກ້ໄຂຂໍ້ມູນບົດບາດ ແລະ ປັບປຸງລາຍການສິດທິ"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Role (ລຶບບົດບາດ)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "4",
+                  "description": "ID ຂອງ Role ທີ່ຕ້ອງການລຶບ"
+                }
+              ]
+            },
+            "description": "ລຶບບົດບາດ (ລະບົບຈະປ້ອງກັນບໍ່ໃຫ້ລຶບ SUPERADMIN ຫຼື Role ທີ່ມີຜູ້ໃຊ້ງານຜູກຢູ່)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "22. Electricity Calculator System",
+      "description": "ລະບົບຄິດໄລ່ຄ່າໄຟຟ້າ ແລະ ແຜນປະຢັດໄຟອັດຕະໂນມັດ ຂອງ ຟຟລ (ແຍກ 6 ໂມດູນຍ່ອຍ, ລວມ 30 Endpoints)",
+      "item": [
+        {
+          "name": "22.1 Tariff Categories (ປະເພດອັດຕາຄ່າໄຟ)",
+          "description": "ໂມດູນຄຸ້ມຄອງປະເພດຜູ້ຊົມໃຊ້ໄຟຟ້າ (ເຊັ່ນ: ທີ່ຢູ່ອາໄສ, ທຸລະກິດ, ອຸດສາຫະກຳ, ກະສິກຳ, ຫ້ອງການລັດ)",
+          "item": [
+            {
+              "name": "Admin: Get All Tariff Categories (ດຶງປະເພດລາຄາໄຟທັງໝົດ)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-categories?search=",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-categories"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "ຄົ້ນຫາຕາມຊື່ປະເພດລາຄາໄຟ"
+                    }
+                  ]
+                },
+                "description": "ດຶງລາຍຊື່ປະເພດລາຄາໄຟທັງໝົດ (ທີ່ຢູ່ອາໄສ, ທຸລະກິດ, ອຸດສາຫະກຳ, ກະສິກຳ, ຯລຯ)"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Get Tariff Category By ID (ດຶງປະເພດລາຄາໄຟຕາມ ID)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-categories/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-categories",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ID ຂອງປະເພດລາຄາໄຟ"
+                    }
+                  ]
+                },
+                "description": "ດຶງຂໍ້ມູນປະເພດລາຄາໄຟຕາມ ID"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Create Tariff Category (ສ້າງປະເພດລາຄາໄຟໃໝ່)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameLa\": \"ອົງການຈັດຕັ້ງສາກົນ\",\n  \"nameEn\": \"International Organizations\",\n  \"categoryGroup\": \"NON_RESIDENTIAL\",\n  \"voltageLevel\": \"0.4 kV\",\n  \"description\": \"ສະຖານທູດ ແລະ ອົງການຈັດຕັ້ງສາກົນ ແຮງດັນຕ່ຳ 0.4 kV\",\n  \"orderIndex\": 2,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-categories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-categories"
+                  ]
+                },
+                "description": "ເພີ່ມປະເພດລາຄາໄຟໃໝ່ (ຮອງຮັບ categoryGroup ແລະ voltageLevel)"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Update Tariff Category (ແກ້ໄຂປະເພດລາຄາໄຟ)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameLa\": \"ອົງການຈັດຕັ້ງສາກົນ (ປັບປຸງ)\",\n  \"categoryGroup\": \"NON_RESIDENTIAL\",\n  \"voltageLevel\": \"0.4 kV\",\n  \"orderIndex\": 2,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-categories/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-categories",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "9",
+                      "description": "ID ຂອງປະເພດລາຄາໄຟ"
+                    }
+                  ]
+                },
+                "description": "ແກ້ໄຂຂໍ້ມູນປະເພດລາຄາໄຟ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Delete Tariff Category (ລຶບປະເພດລາຄາໄຟ)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-categories/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-categories",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "9",
+                      "description": "ID ຂອງປະເພດລາຄາໄຟ"
+                    }
+                  ]
+                },
+                "description": "ລຶບປະເພດລາຄາໄຟ"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "22.2 Tariff Notices & Schedules (ປະກາດອັດຕາຄ່າໄຟ & ຕາຕະລາງ 8 ຂັ້ນບັນໄດ)",
+          "description": "ໂມດູນຄຸ້ມຄອງແຈ້ງການອັດຕາຄ່າໄຟ, ອັດຕາ VAT, ສ່ວນຫຼຸດລະດູຮ້ອນ ແລະ ຕາຕະລາງ 8 ຂັ້ນບັນໄດລາຍເດືອນ",
+          "item": [
+            {
+              "name": "Admin: Get All Tariff Notices (ດຶງປະກາດອັດຕາຄ່າໄຟທັງໝົດ)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-notices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-notices"
+                  ]
+                },
+                "description": "ດຶງລາຍການປະກາດໂຄງສ້າງອັດຕາຄ່າໄຟຟ້າທັງໝົດ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Get Tariff Notice By ID (ດຶງປະກາດອັດຕາຄ່າໄຟຕາມ ID)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-notices/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-notices",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ID ຂອງປະກາດ"
+                    }
+                  ]
+                },
+                "description": "ດຶງຂໍ້ມູນປະກາດອັດຕາຄ່າໄຟ ພ້ອມຕາຕະລາງຂັ້ນບັນໄດລາຍເດືອນທັງໝົດ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Create Tariff Notice (ສ້າງປະກາດອັດຕາຄ່າໄຟໃໝ່)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"noticeNumber\": \"2026/ຟຟລ.ຝທຜ\",\n  \"title\": \"ແຈ້ງການ ປັບປຸງໂຄງສ້າງອັດຕາຄ່າໄຟຟ້າ ສະບັບໃໝ່\",\n  \"issuedDate\": \"2026-05-01\",\n  \"effectiveFrom\": \"2026-06-01\",\n  \"effectiveTo\": \"2029-12-31\",\n  \"vatRate\": 0.1,\n  \"hotSeasonDiscountCapKwh\": 300,\n  \"maintenanceFeeKip\": 5000,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-notices",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-notices"
+                  ]
+                },
+                "description": "ສ້າງປະກາດອັດຕາຄ່າໄຟຟ້າໃໝ່"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Update Tariff Notice (ແກ້ໄຂປະກາດອັດຕາຄ່າໄຟ)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"ແຈ້ງການ ໂຄງສ້າງອັດຕາຄ່າໄຟຟ້າປະເພດທີ່ຢູ່ອາໄສ (2026–2029)\",\n  \"vatRate\": 0.1,\n  \"hotSeasonDiscountCapKwh\": 300,\n  \"maintenanceFeeKip\": 5000,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-notices/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-notices",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ID ຂອງປະກາດ"
+                    }
+                  ]
+                },
+                "description": "ແກ້ໄຂຂໍ້ມູນປະກາດອັດຕາຄ່າໄຟຟ້າ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Delete Tariff Notice (ລຶບປະກາດອັດຕາຄ່າໄຟ)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/tariff-notices/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "tariff-notices",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "2",
+                      "description": "ID ຂອງປະກາດ"
+                    }
+                  ]
+                },
+                "description": "ລຶບປະກາດອັດຕາຄ່າໄຟຟ້າ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Upsert Monthly Schedule & 8 Tiers (ບັນທຶກ/ແກ້ໄຂຕາຕະລາງຂັ້ນບັນໄດລາຍເດືອນ)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"noticeId\": 1,\n  \"categoryId\": 1,\n  \"year\": 2026,\n  \"month\": 11,\n  \"isHotSeason\": false,\n  \"maintenanceFeeKip\": 5000,\n  \"tiers\": [\n    {\n      \"tierOrder\": 1,\n      \"label\": \"0–25\",\n      \"minKwh\": 0,\n      \"maxKwh\": 25,\n      \"rateKipPerKwh\": 355\n    },\n    {\n      \"tierOrder\": 2,\n      \"label\": \"26–150\",\n      \"minKwh\": 26,\n      \"maxKwh\": 150,\n      \"rateKipPerKwh\": 422\n    },\n    {\n      \"tierOrder\": 3,\n      \"label\": \"151–300\",\n      \"minKwh\": 151,\n      \"maxKwh\": 300,\n      \"rateKipPerKwh\": 999\n    },\n    {\n      \"tierOrder\": 4,\n      \"label\": \"301–400\",\n      \"minKwh\": 301,\n      \"maxKwh\": 400,\n      \"rateKipPerKwh\": 1200\n    },\n    {\n      \"tierOrder\": 5,\n      \"label\": \"401–500\",\n      \"minKwh\": 401,\n      \"maxKwh\": 500,\n      \"rateKipPerKwh\": 1450\n    },\n    {\n      \"tierOrder\": 6,\n      \"label\": \"501–1,000\",\n      \"minKwh\": 501,\n      \"maxKwh\": 1000,\n      \"rateKipPerKwh\": 1750\n    },\n    {\n      \"tierOrder\": 7,\n      \"label\": \"1,001–1,500\",\n      \"minKwh\": 1001,\n      \"maxKwh\": 1500,\n      \"rateKipPerKwh\": 2050\n    },\n    {\n      \"tierOrder\": 8,\n      \"label\": \"> 1,500\",\n      \"minKwh\": 1501,\n      \"maxKwh\": null,\n      \"rateKipPerKwh\": 2350\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/schedules",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "schedules"
+                  ]
+                },
+                "description": "ບັນທຶກ ຫຼື ອັບເດດຕາຕະລາງອັດຕາຄ່າໄຟລາຍເດືອນ ພ້ອມທັງ 8 ຂັ້ນບັນໄດໃນ Transaction ດຽວ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Delete Monthly Schedule (ລຶບຕາຕະລາງຄ່າໄຟລາຍເດືອນ)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/schedules/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "schedules",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "44",
+                      "description": "ID ຂອງຕາຕະລາງເດືອນ"
+                    }
+                  ]
+                },
+                "description": "ລຶບຕາຕະລາງອັດຕາຄ່າໄຟລາຍເດືອນ"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "22.3 Appliance Categories (ໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າ)",
+          "description": "ໂມດູນຄຸ້ມຄອງໝວດໝູ່ຂອງເຄື່ອງໃຊ້ໄຟຟ້າ (ແອ, ຕູ້ເຢັນ, ໄຟເຍືອງທາງ, ເຄື່ອງສາກ EV, ...)",
+          "item": [
+            {
+              "name": "Admin: Get All Appliance Categories (ດຶງໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າທັງໝົດ)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/categories?search=",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "categories"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "ຄົ້ນຫາຕາມລະຫັດ ຫຼື ຊື່ໝວດໝູ່"
+                    }
+                  ]
+                },
+                "description": "ດຶງລາຍຊື່ໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າທັງໝົດ ພ້ອມ Presets ແລະ Saving Templates"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Get Appliance Category By ID (ດຶງໝວດໝູ່ຕາມ ID)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/categories/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "categories",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ID ຂອງໝວດໝູ່"
+                    }
+                  ]
+                },
+                "description": "ດຶງຂໍ້ມູນໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າຕາມ ID"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Create Appliance Category (ສ້າງໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າໃໝ່)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameLa\": \"ເຄື່ອງສາກລົດໄຟຟ້າ (EV Charger)\",\n  \"nameEn\": \"EV Home Charger\",\n  \"iconName\": \"Zap\",\n  \"orderIndex\": 11,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/categories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "categories"
+                  ]
+                },
+                "description": "ເພີ່ມໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າໃໝ່"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Update Appliance Category (ແກ້ໄຂໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າ)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameLa\": \"ເຄື່ອງປັບອາກາດ (ແອບ້ານ)\",\n  \"nameEn\": \"Residential Air Conditioner\",\n  \"orderIndex\": 1,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/categories/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "categories",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ID ຂອງໝວດໝູ່"
+                    }
+                  ]
+                },
+                "description": "ແກ້ໄຂຂໍ້ມູນໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Delete Appliance Category (ລຶບໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າ)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/categories/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "categories",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "11",
+                      "description": "ID ຂອງໝວດໝູ່"
+                    }
+                  ]
+                },
+                "description": "ລຶບໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າ"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "22.4 Appliance Presets (ເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບ)",
+          "description": "ໂມດູນຄຸ້ມຄອງເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບ ພ້ອມກຳລັງໄຟ Watts, ຊົ່ວໂມງນຳໃຊ້ຕໍ່ມື້ ແລະ ມື້ຕໍ່ເດືອນ",
+          "item": [
+            {
+              "name": "Admin: Get All Appliance Presets (ດຶງເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບທັງໝົດ)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/presets?categoryId=1&search=",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "presets"
+                  ],
+                  "query": [
+                    {
+                      "key": "categoryId",
+                      "value": "1",
+                      "description": "ກັ່ນຕອງຕາມ ID ໝວດໝູ່ (optional)"
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "ຄົ້ນຫາຕາມຊື່ ຫຼື ລະຫັດ (optional)"
+                    }
+                  ]
+                },
+                "description": "ດຶງລາຍການເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບ (Presets)"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Get Appliance Preset By ID (ດຶງເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບຕາມ ID)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/presets/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "presets",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ID ຂອງ Preset"
+                    }
+                  ]
+                },
+                "description": "ດຶງຂໍ້ມູນເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບຕາມ ID"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Create Appliance Preset (ສ້າງເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບໃໝ່)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"categoryId\": 1,\n  \"nameLa\": \"ແອ 24,000 BTU\",\n  \"nameEn\": \"Air Conditioner 24,000 BTU\",\n  \"defaultWatt\": 2200,\n  \"defaultQuantity\": 1,\n  \"defaultHoursPerDay\": 8,\n  \"defaultDaysPerMonth\": 30,\n  \"isSampleDefault\": false,\n  \"orderIndex\": 4,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/presets",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "presets"
+                  ]
+                },
+                "description": "ສ້າງຂໍ້ມູນເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບໃໝ່"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Update Appliance Preset (ແກ້ໄຂເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບ)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"defaultWatt\": 1050,\n  \"defaultHoursPerDay\": 8,\n  \"isSampleDefault\": true,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/presets/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "presets",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "2",
+                      "description": "ID ຂອງ Preset"
+                    }
+                  ]
+                },
+                "description": "ແກ້ໄຂຂໍ້ມູນເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Delete Appliance Preset (ລຶບເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບ)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/presets/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "presets",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "12",
+                      "description": "ID ຂອງ Preset"
+                    }
+                  ]
+                },
+                "description": "ລຶບເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບ"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "22.5 Saving Templates (ແມ່ແບບວິທີປະຢັດໄຟ)",
+          "description": "ໂມດູນຄຸ້ມຄອງແມ່ແບບວິທີປະຢັດໄຟຟ້າ (Inverter, ຕັ້ງອຸນຫະພູມ 26°C, ...) ພ້ອມສູດຄຳນວນ",
+          "item": [
+            {
+              "name": "Admin: Get All Saving Templates (ດຶງແມ່ແບບວິທີປະຢັດໄຟທັງໝົດ)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/saving-templates?categoryId=1&search=",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "saving-templates"
+                  ],
+                  "query": [
+                    {
+                      "key": "categoryId",
+                      "value": "1",
+                      "description": "ກັ່ນຕອງຕາມ ID ໝວດໝູ່ (optional)"
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "ຄົ້ນຫາຕາມຊື່ ຫຼື ລະຫັດ (optional)"
+                    }
+                  ]
+                },
+                "description": "ດຶງລາຍການແມ່ແບບວິທີປະຢັດໄຟທັງໝົດ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Get Saving Template By ID (ດຶງແມ່ແບບວິທີປະຢັດໄຟຕາມ ID)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/saving-templates/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "saving-templates",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ID ຂອງແມ່ແບບ"
+                    }
+                  ]
+                },
+                "description": "ດຶງຂໍ້ມູນແມ່ແບບວິທີປະຢັດໄຟຕາມ ID"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Create Saving Template (ສ້າງແມ່ແບບວິທີປະຢັດໄຟໃໝ່)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"categoryId\": 1,\n  \"titleLa\": \"ປ່ຽນເຄື່ອງປັບອາກາດເປັນລະບົບ Inverter\",\n  \"titleEn\": \"Upgrade to Inverter Air Conditioner\",\n  \"descriptionLa\": \"ລະບົບ Inverter ຊ່ວຍຄວບຄຸມຮອບຄອມເພຣສເຊີ ປະຢັດໄຟລົງໄດ້ 30%\",\n  \"descriptionEn\": \"Inverter compressors reduce power consumption by up to 30%\",\n  \"effortLevel\": \"INVESTMENT\",\n  \"ruleType\": \"FIXED_FRACTION\",\n  \"fixedFraction\": 0.3,\n  \"defaultSelected\": false,\n  \"orderIndex\": 8,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/saving-templates",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "saving-templates"
+                  ]
+                },
+                "description": "ສ້າງແມ່ແບບວິທີປະຢັດໄຟໃໝ່"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Update Saving Template (ແກ້ໄຂແມ່ແບບວິທີປະຢັດໄຟ)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fixedFraction\": 0.15,\n  \"defaultSelected\": true,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/saving-templates/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "saving-templates",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ID ຂອງແມ່ແບບ"
+                    }
+                  ]
+                },
+                "description": "ແກ້ໄຂຂໍ້ມູນແມ່ແບບວິທີປະຢັດໄຟ"
+              },
+              "response": []
+            },
+            {
+              "name": "Admin: Delete Saving Template (ລຶບແມ່ແບບວິທີປະຢັດໄຟ)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/saving-templates/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "saving-templates",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "8",
+                      "description": "ID ຂອງແມ່ແບບ"
+                    }
+                  ]
+                },
+                "description": "ລຶບແມ່ແບບວິທີປະຢັດໄຟ"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "22.6 Calculation Engine & Config (Public APIs)",
+          "description": "API ສາທາລະນະສຳລັບປະຊາຊົນ: ດຶງ Config, ດຶງຕາຕະລາງ 8 ຂັ້ນບັນໄດ ແລະ ຄິດໄລ່ຄ່າໄຟຟ້າ + ແຜນປະຢັດໄຟ",
+          "item": [
+            {
+              "name": "Public: Get Calculator Config (ດຶງຂໍ້ມູນຕັ້ງຕົ້ນທັງໝົດສຳລັບໜ້າເວັບ)",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/config",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "config"
+                  ]
+                },
+                "description": "ດຶງໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າ, Presets, ແມ່ແບບວິທີປະຢັດໄຟ, ເຄື່ອງໃຊ້ໄຟຟ້າຕົວຢ່າງ ແລະ ຕາຕະລາງເດືອນ/ປີທັງໝົດ"
+              },
+              "response": []
+            },
+            {
+              "name": "Public: Get Tariff Schedule By Year & Month (ດຶງຕາຕະລາງ 8 ຂັ້ນບັນໄດລາຍເດືອນ)",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/schedules?year=2026&month=11&categoryId=1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "schedules"
+                  ],
+                  "query": [
+                    {
+                      "key": "year",
+                      "value": "2026",
+                      "description": "ປີ (2026 - 2029)"
+                    },
+                    {
+                      "key": "month",
+                      "value": "11",
+                      "description": "ເດືອນ (1 - 12)"
+                    },
+                    {
+                      "key": "categoryId",
+                      "value": "1",
+                      "description": "ID ຂອງປະເພດລາຄາໄຟ (optional, default: 1)"
+                    }
+                  ]
+                },
+                "description": "ດຶງຂໍ້ມູນຕາຕະລາງອັດຕາຄ່າໄຟ 8 ຂັ້ນບັນໄດ ຕາມປີ ແລະ ເດືອນທີ່ເລືອກ (ແລະ ປະເພດລາຄາໄຟ)"
+              },
+              "response": []
+            },
+            {
+              "name": "Public: Calculate Electricity Bill & Saving Plan (ຄິດໄລ່ຄ່າໄຟ + ແຜນປະຢັດໄຟ)",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"categoryId\": 1,\n  \"year\": 2026,\n  \"month\": 11,\n  \"maintenanceFeeKip\": 5000,\n  \"appliances\": [\n    {\n      \"categoryCode\": \"ac\",\n      \"presetCode\": \"ac12\",\n      \"customName\": \"ແອຫ້ອງນອນ 12,000 BTU\",\n      \"watt\": 1100,\n      \"quantity\": 1,\n      \"hoursPerDay\": 8,\n      \"daysPerMonth\": 30\n    },\n    {\n      \"categoryCode\": \"fridge\",\n      \"presetCode\": \"fridge\",\n      \"customName\": \"ຕູ້ເຢັນ 2 ປະຕູ\",\n      \"watt\": 120,\n      \"quantity\": 1,\n      \"hoursPerDay\": 12,\n      \"daysPerMonth\": 30\n    },\n    {\n      \"categoryCode\": \"oldlight\",\n      \"presetCode\": \"oldlight36\",\n      \"customName\": \"ດອກໄຟນີອອນຍາວ 36W\",\n      \"watt\": 36,\n      \"quantity\": 4,\n      \"hoursPerDay\": 6,\n      \"daysPerMonth\": 30\n    }\n  ],\n  \"selectedActionCodes\": [\n    \"ac26\",\n    \"actimer\",\n    \"toled\",\n    \"fridgeseal\"\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/electricity-calculator/calculate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "electricity-calculator",
+                    "calculate"
+                  ]
+                },
+                "description": "ຄິດໄລ່ຄ່າໄຟຟ້າຂັ້ນບັນໄດ + ແຜນປະຢັດໄຟອັດຕະໂນມັດ + ຄາດການລາຍປີ (2026–2029)"
+              },
+              "response": []
+            }
+          ]
         }
       ]
     }

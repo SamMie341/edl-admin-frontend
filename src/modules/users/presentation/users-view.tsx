@@ -31,7 +31,7 @@ import { SyncUserModal } from './components/sync-user-modal';
 import { EditRoleModal } from './components/edit-role-modal';
 import { AssignPermissionsModal } from './components/assign-permissions-modal';
 import { ChangePasswordModal } from './components/change-password-modal';
-import type { UserItem, UserRole } from '../domain/user.types';
+import { getUserRoleName, type UserItem, type UserRole } from '../domain/user.types';
 import { cn } from '@/lib/utils';
 
 export function UsersView() {
@@ -66,8 +66,9 @@ export function UsersView() {
   // Filtered & Searched Data
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
+      const uRole = getUserRoleName(u.role);
       // Role Filter
-      if (roleFilter !== 'ALL' && u.role !== roleFilter) {
+      if (roleFilter !== 'ALL' && uRole !== roleFilter) {
         return false;
       }
 
@@ -171,19 +172,39 @@ export function UsersView() {
           EDITOR: { label: 'Editor', variant: 'warning' },
           STAFF: { label: 'Staff', variant: 'default' },
         };
-        const r = roleLabels[user.role] || { label: user.role, variant: 'default' };
-        const permCount = user.userPermissions?.length || 0;
+        const roleName = getUserRoleName(user.role);
+        const r = roleLabels[roleName] || { label: roleName || 'ຍັງບໍ່ມີບົດບາດ', variant: 'default' };
+        const allowCount =
+          user.userPermissions?.filter((up) => up.effect !== 'DENY').length || 0;
+        const denyCount =
+          user.userPermissions?.filter((up) => up.effect === 'DENY').length || 0;
+        const hasOverrides = allowCount > 0 || denyCount > 0;
 
         return (
           <div className="space-y-1">
             <StatusBadge label={r.label} variant={r.variant} />
-            {user.role === 'SUPERADMIN' ? (
-              <span className="block text-[10px] text-amber-600 font-semibold">
-                ທຸກສິດ (Bypass)
-              </span>
+            {roleName === 'SUPERADMIN' ? (
+              denyCount > 0 ? (
+                <span className="block text-[10px] text-rose-600 font-semibold">
+                  ທຸກສິດ (ປິດ {denyCount} ສິດ)
+                </span>
+              ) : (
+                <span className="block text-[10px] text-amber-600 font-semibold">
+                  ທຸກສິດ (Bypass)
+                </span>
+              )
+            ) : hasOverrides ? (
+              <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold">
+                {allowCount > 0 && (
+                  <span className="text-blue-600">+{allowCount} ເພີ່ມ</span>
+                )}
+                {denyCount > 0 && (
+                  <span className="text-rose-600">-{denyCount} ປິດ</span>
+                )}
+              </div>
             ) : (
               <span className="block text-[10px] text-slate-400 font-medium">
-                {permCount > 0 ? `${permCount} ສິດທິ` : 'ຍັງບໍ່ມີສິດ'}
+                ສິດທິຕາມບົດບາດ (Role Default)
               </span>
             )}
           </div>
@@ -205,59 +226,65 @@ export function UsersView() {
         </span>
       ),
     },
-    {
-      header: <span className="text-right block pr-2">ຈັດການ</span>,
-      className: 'w-[160px] text-right',
-      cell: (user) => (
-        <div className="flex items-center justify-end gap-1">
-          {/* Assign Permissions Button */}
-          {canUpdateUser && (
-            <button
-              type="button"
-              onClick={() => setAssigningPermissionsUser(user)}
-              title="ກຳນົດສິດການນຳໃຊ້ (Permissions)"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition cursor-pointer"
-            >
-              <ShieldCheck className="h-4 w-4" />
-            </button>
-          )}
+    ...(canUpdateUser || canDeleteUser
+      ? [
+          {
+            header: <span className="text-right block pr-2">ຈັດການ</span>,
+            className: 'w-[160px] text-right',
+            cell: (user: UserItem) => (
+              <div className="flex items-center justify-end gap-1">
+                {/* Assign Permissions Button */}
+                {canUpdateUser && (
+                  <button
+                    type="button"
+                    onClick={() => setAssigningPermissionsUser(user)}
+                    title="ກຳນົດສິດການນຳໃຊ້ (Permissions)"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition cursor-pointer"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                  </button>
+                )}
 
-          {/* Edit Role Button */}
-          {canUpdateUser && (
-            <button
-              type="button"
-              onClick={() => setEditingRoleUser(user)}
-              title="ປ່ຽນສິດທິ / ສະຖານະ"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-            >
-              <Shield className="h-4 w-4" />
-            </button>
-          )}
+                {/* Edit Role Button */}
+                {canUpdateUser && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingRoleUser(user)}
+                    title="ປ່ຽນສິດທິ / ສະຖານະ"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                  >
+                    <Shield className="h-4 w-4" />
+                  </button>
+                )}
 
-          {/* Change Password Button */}
-          <button
-            type="button"
-            onClick={() => setChangingPasswordUser(user)}
-            title="Reset ລະຫັດຜ່ານ"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition cursor-pointer"
-          >
-            <KeyRound className="h-4 w-4" />
-          </button>
+                {/* Change Password Button */}
+                {canUpdateUser && (
+                  <button
+                    type="button"
+                    onClick={() => setChangingPasswordUser(user)}
+                    title="Reset ລະຫັດຜ່ານ"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition cursor-pointer"
+                  >
+                    <KeyRound className="h-4 w-4" />
+                  </button>
+                )}
 
-          {/* Delete User Button */}
-          {canDeleteUser && (
-            <button
-              type="button"
-              onClick={() => setDeletingUser(user)}
-              title="ລຶບບັນຊີຜູ້ໃຊ້"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      ),
-    },
+                {/* Delete User Button */}
+                {canDeleteUser && (
+                  <button
+                    type="button"
+                    onClick={() => setDeletingUser(user)}
+                    title="ລຶບບັນຊີຜູ້ໃຊ້"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   // ກວດສອບສິດການເຂົ້າເຖິງໂມດູນ Users (USERS:READ ຫຼື SuperAdmin)
@@ -285,7 +312,7 @@ export function UsersView() {
           const count =
             tab.key === 'ALL'
               ? users.length
-              : users.filter((u) => u.role === tab.key).length;
+              : users.filter((u) => getUserRoleName(u.role) === tab.key).length;
 
           return (
             <button

@@ -7,6 +7,7 @@ import type {
   ChangePasswordPayload,
   SyncUserResponse,
   PermissionItem,
+  UserPermissionsDetail,
   AssignPermissionsPayload,
   AssignPermissionsResponse,
 } from '../domain/user.types';
@@ -57,7 +58,17 @@ export const userApi = {
   },
 
   /**
-   * ກຳນົດສິດການນຳໃຊ້ (Permissions) ໃຫ້ຜູ້ໃຊ້ (PUT /api/v1/users/:id/permissions)
+   * ດຶງສິດຈາກ Role, ALLOW, DENY ແລະ ສິດທິສຸດທິຂອງຜູ້ໃຊ້ (GET /api/v1/users/:id/permissions)
+   */
+  async getUserPermissions(id: number): Promise<UserPermissionsDetail> {
+    const { data } = await apiClient.get<ApiResponse<UserPermissionsDetail>>(
+      API_ENDPOINTS.USERS.PERMISSIONS(id)
+    );
+    return data.data;
+  },
+
+  /**
+   * ກຳນົດສິດເພີ່ມ (ALLOW) ແລະ ປິດສິດຈາກ Role (DENY) ໃຫ້ຜູ້ໃຊ້ (PUT /api/v1/users/:id/permissions)
    */
   async assignPermissions(
     id: number,

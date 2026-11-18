@@ -4,6 +4,7 @@ export const AUTH_USER_STORAGE_KEY = 'edl_admin_user';
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
+    PROFILE: '/auth/profile',
   },
   USERS: {
     BASE: '/users',
@@ -13,6 +14,11 @@ export const API_ENDPOINTS = {
     BY_ID: (id: number) => `/users/${id}`,
     PERMISSIONS_LIST: '/users/permissions/list',
     PERMISSIONS: (id: number) => `/users/${id}/permissions`,
+  },
+  ROLES: {
+    BASE: '/roles',
+    DROPDOWN: '/roles/dropdown',
+    BY_ID: (id: number) => `/roles/${id}`,
   },
   DEPARTMENTS: {
     BASE: '/departments',
@@ -112,5 +118,22 @@ export const API_ENDPOINTS = {
     BASE: '/job-postings',
     BY_ID: (id: number) => `/job-postings/${id}`,
     UPLOAD_DOCUMENT: (id: number) => `/job-postings/${id}/upload/document`,
+  },
+  ELECTRICITY_CALCULATOR: {
+    CONFIG: '/electricity-calculator/config',
+    SCHEDULES: '/electricity-calculator/schedules',
+    CALCULATE: '/electricity-calculator/calculate',
+    TARIFF_CATEGORIES: '/electricity-calculator/tariff-categories',
+    TARIFF_CATEGORY_BY_ID: (id: number) => `/electricity-calculator/tariff-categories/${id}`,
+    CATEGORIES: '/electricity-calculator/categories',
+    CATEGORY_BY_ID: (id: number) => `/electricity-calculator/categories/${id}`,
+    PRESETS: '/electricity-calculator/presets',
+    PRESET_BY_ID: (id: number) => `/electricity-calculator/presets/${id}`,
+    SAVING_TEMPLATES: '/electricity-calculator/saving-templates',
+    SAVING_TEMPLATE_BY_ID: (id: number) => `/electricity-calculator/saving-templates/${id}`,
+    TARIFF_NOTICES: '/electricity-calculator/tariff-notices',
+    TARIFF_NOTICE_BY_ID: (id: number) => `/electricity-calculator/tariff-notices/${id}`,
+    UPSERT_SCHEDULE: '/electricity-calculator/schedules',
+    DELETE_SCHEDULE: (id: number) => `/electricity-calculator/schedules/${id}`,
   },
 } as const;

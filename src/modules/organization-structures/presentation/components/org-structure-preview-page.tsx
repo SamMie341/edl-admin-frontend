@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 interface OrgStructurePreviewPageProps {
   item: OrgStructureItem;
   onBack: () => void;
-  onEdit: (item: OrgStructureItem) => void;
+  onEdit?: (item: OrgStructureItem) => void;
 }
 
 export function OrgStructurePreviewPage({
@@ -153,15 +153,17 @@ export function OrgStructurePreviewPage({
               </a>
             )}
 
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onEdit(item)}
-              className="h-8 sm:h-9 px-3 sm:px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 cursor-pointer shadow-sm"
-            >
-              <Edit className="h-3.5 w-3.5" />
-              <span>ແກ້ໄຂ</span>
-            </Button>
+            {onEdit && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onEdit(item)}
+                className="h-8 sm:h-9 px-3 sm:px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Edit className="h-3.5 w-3.5" />
+                <span>ແກ້ໄຂ</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>

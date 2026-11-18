@@ -18,16 +18,34 @@ import {
   FileText,
   UserCheck,
   Map,
+  ShieldCheck,
+  Calculator,
+  Layers,
+  Sparkles,
+  FileSpreadsheet,
+  Tag,
 } from 'lucide-react';
 import type { UserRole } from '@/modules/auth/domain/auth.types';
+
+export interface NavSubItem {
+  title: string;
+  href: string;
+  icon?: LucideIcon;
+  badge?: string;
+  roles?: (UserRole | string)[];
+  module?: string;
+  modules?: string[];
+}
 
 export interface NavItem {
   title: string;
   href: string;
   icon: LucideIcon;
   badge?: string;
-  roles?: UserRole[];
+  roles?: (UserRole | string)[];
   module?: string;
+  modules?: string[];
+  children?: NavSubItem[];
 }
 
 export interface NavGroup {
@@ -83,7 +101,7 @@ export const SIDEBAR_NAVIGATION: NavGroup[] = [
         title: 'ຂໍ້ມູນແຂວງ / ເມືອງ / ບ້ານ',
         href: '/locations',
         icon: Map,
-        module: 'PROVINCES',
+        modules: ['PROVINCES', 'DISTRICTS', 'VILLAGES'],
       },
     ],
   },
@@ -126,6 +144,50 @@ export const SIDEBAR_NAVIGATION: NavGroup[] = [
     groupTitle: 'ບໍລິການ & ປະກາດສາທາລະນະ',
     items: [
       {
+        title: 'ຄິດໄລ່ຄ່າໄຟຟ້າ & ແຜນປະຢັດໄຟ',
+        href: '/electricity-calculator',
+        icon: Calculator,
+        module: 'ELECTRICITY_CALCULATOR',
+        children: [
+          {
+            title: 'ປະເພດອັດຕາຄ່າໄຟ',
+            href: '/electricity-calculator/tariff-categories',
+            icon: Tag,
+            module: 'ELECTRICITY_CALCULATOR',
+          },
+          {
+            title: 'ປະກາດ & ຕາຕະລາງ 8 ຂັ້ນ',
+            href: '/electricity-calculator/notices',
+            icon: FileSpreadsheet,
+            module: 'ELECTRICITY_CALCULATOR',
+          },
+          {
+            title: 'ໝວດໝູ່ເຄື່ອງໃຊ້ໄຟຟ້າ',
+            href: '/electricity-calculator/categories',
+            icon: Layers,
+            module: 'ELECTRICITY_CALCULATOR',
+          },
+          {
+            title: 'ເຄື່ອງໃຊ້ໄຟຟ້າຕົ້ນແບບ',
+            href: '/electricity-calculator/presets',
+            icon: Zap,
+            module: 'ELECTRICITY_CALCULATOR',
+          },
+          {
+            title: 'ແມ່ແບບວິທີປະຢັດໄຟ',
+            href: '/electricity-calculator/saving-templates',
+            icon: Sparkles,
+            module: 'ELECTRICITY_CALCULATOR',
+          },
+          {
+            title: 'ທົດລອງຄິດໄລ່ (Simulator)',
+            href: '/electricity-calculator/simulator',
+            icon: Calculator,
+            module: 'ELECTRICITY_CALCULATOR',
+          },
+        ],
+      },
+      {
         title: 'ໂຄງສ້າງອັດຕາຄ່າໄຟຟ້າ',
         href: '/electricity-tariffs',
         icon: Zap,
@@ -164,8 +226,13 @@ export const SIDEBAR_NAVIGATION: NavGroup[] = [
         title: 'ຈັດການຜູ້ໃຊ້ງານ (IAM)',
         href: '/users',
         icon: Users,
-        roles: ['SUPERADMIN', 'ADMIN'],
         module: 'USERS',
+      },
+      {
+        title: 'ຈັດການສິດທິບົດບາດ (Roles)',
+        href: '/roles',
+        icon: ShieldCheck,
+        module: 'ROLES',
       },
     ],
   },
