@@ -39,8 +39,8 @@ export interface ServiceCenterItem {
 
 export interface CreateServiceCenterPayload {
   centerName: string;
-  departmentId?: number;
-  branchId?: number;
+  departmentId: number;
+  branchId: number;
   provinceId: number;
   districtId: number;
   villageId: number;

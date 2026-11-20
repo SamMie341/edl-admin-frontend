@@ -102,7 +102,7 @@ export const branchApi = {
 
     const { data } = await apiClient.post<
       ApiResponse<{ message: string; imagePath: string; branch: BranchItem }>
-    >(`/branches/${id}/upload/${imageType}`, formData);
+    >(API_ENDPOINTS.BRANCHES.UPLOAD_IMAGE(id, imageType), formData);
 
     return data.data;
   },

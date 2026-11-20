@@ -14,6 +14,7 @@ import {
   Edit,
   Clock,
   Layers,
+  Pin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RichTextRenderer } from '@/core/presentation/components/shared';
@@ -140,9 +141,17 @@ export function NewsDetailModal({
 
           {/* Category & Status Overlay */}
           <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between gap-2">
-            <span className="px-3 py-1 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-md">
-              {news.category?.categoryName || 'ໝວດໝູ່ທົ່ວໄປ'}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-md">
+                {news.category?.categoryName || 'ໝວດໝູ່ທົ່ວໄປ'}
+              </span>
+              {news.isPinned && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500 text-white text-xs font-bold shadow-md">
+                  <Pin className="h-3 w-3" />
+                  <span>ປັກໝຸດຂ່າວເດັ່ນ</span>
+                </span>
+              )}
+            </div>
             <div>{getStatusBadge(news.status)}</div>
           </div>
         </div>

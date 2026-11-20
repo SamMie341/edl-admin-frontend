@@ -300,8 +300,8 @@ export interface TierBreakdownItem {
   label: string;
   minKwh: number;
   maxKwh: number | null;
+  tierKwh: number;
   rateKipPerKwh: number;
-  kwhInTier: number;
   costKip: number;
 }
 
@@ -313,74 +313,69 @@ export interface TariffBillResult {
   netBaseCostKip: number;
   maintenanceFeeKip: number;
   subtotalBeforeVatKip: number;
-  vatRate: number;
   vatCostKip: number;
   totalCostKip: number;
   tierBreakdown: TierBreakdownItem[];
 }
 
 export interface SavingRecommendationItem {
-  templateId?: number;
-  applianceIndex: number;
-  applianceName: string;
-  categoryId?: number;
+  templateId: number;
+  templateCode?: string;
   titleLa: string;
-  titleEn: string | null;
+  titleEn?: string | null;
   descriptionLa: string;
-  descriptionEn: string | null;
-  effortLevel: EffortLevel;
-  ruleType: SavingRuleType;
-  isSelected: boolean;
-  savingFraction: number;
-  estimatedKwhSaved: number;
-  estimatedKipSaved: number;
-}
-
-export interface SavingPlanResult {
-  beforePlanKwh: number;
-  afterPlanKwh: number;
-  totalKwhSaved: number;
-  savingPercent: number;
-  estimatedKipSaved: number;
-  beforeBill: TariffBillResult;
-  afterBill: TariffBillResult;
-  recommendations: SavingRecommendationItem[];
+  descriptionEn?: string | null;
+  effortLevel: EffortLevel | string;
+  appliedApplianceCount: number;
+  savedKwhPerMonth: number;
+  savedKipPerMonth: number;
+  isDefaultSelected: boolean;
 }
 
 export interface YearlyOutlookItem {
   year: number;
   month: number;
-  noticeNumber: string;
-  costBeforeKip: number;
-  costAfterKip: number;
-  savedPerMonthKip: number;
-  savedPerYearKip: number;
+  beforeTotalCostKip: number;
+  afterTotalCostKip: number;
+  monthlySavedKip: number;
+  yearlySavedKip: number;
 }
 
 export interface CalculateBillResponse {
-  year: number;
-  month: number;
-  schedule: {
-    id: number;
-    categoryId?: number;
-    category?: {
-      id: number;
-      nameLa: string;
-      nameEn?: string | null;
-    };
+  selectedPeriod: {
+    scheduleId: number;
+    categoryId: number;
+    categoryNameLa?: string;
+    categoryNameEn?: string | null;
+    categoryGroup?: string | null;
+    voltageLevel?: string | null;
+    year: number;
+    month: number;
     isHotSeason: boolean;
-    maintenanceFeeKip?: number | null;
-    notice: {
-      noticeNumber: string;
-      title: string;
-      vatRate: number;
-      hotSeasonDiscountCapKwh: number;
-      maintenanceFeeKip: number;
-    };
+    noticeNumber: string;
+    vatRate: number;
+    maintenanceFeeKip: number;
   };
-  totalMonthlyKwh: number;
+  summary: {
+    totalMonthlyKwh: number;
+    afterPlanKwh: number;
+    totalSavedKwh: number;
+    currentTierOrder: number;
+    afterTierOrder: number;
+    baseCostKip: number;
+    hotSeasonDiscountKip: number;
+    netBaseCostKip: number;
+    maintenanceFeeKip: number;
+    subtotalBeforeVatKip: number;
+    vatCostKip: number;
+    totalCostKip: number;
+    afterPlanCostKip: number;
+    monthlySavedKip: number;
+    yearlySavedKip: number;
+  };
   currentBill: TariffBillResult;
-  appliancesBreakdown: Array<{
+  afterPlanBill: TariffBillResult;
+  appliances: Array<{
     index: number;
     categoryId?: number | null;
     presetId?: number | null;
@@ -392,7 +387,7 @@ export interface CalculateBillResponse {
     monthlyKwh: number;
     sharePercent: number;
   }>;
-  savingPlan: SavingPlanResult;
+  savingRecommendations: SavingRecommendationItem[];
   yearlyOutlook: YearlyOutlookItem[];
 }
 

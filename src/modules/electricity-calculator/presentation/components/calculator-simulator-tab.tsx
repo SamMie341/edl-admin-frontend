@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Zap,
   Calculator,
@@ -21,6 +21,7 @@ import {
   useCalculatorConfig,
   useCalculateBill,
   useTariffCategories,
+  useTariffSchedule,
 } from '../../application/use-electricity-calculator.hook';
 import type {
   ApplianceCalculationInput,
@@ -46,24 +47,66 @@ export function CalculatorSimulatorTab() {
   const [appliances, setAppliances] = useState<ApplianceCalculationInput[]>([]);
   // Selected saving action template IDs
   const [selectedActions, setSelectedActions] = useState<number[]>([]);
+  const hasInitializedConfigRef = useRef(false);
+
+  // Query active schedule for selected (year, month, categoryId) to sync maintenanceFeeKip automatically
+  const { data: activeSchedule } = useTariffSchedule(
+    year,
+    month,
+    selectedTariffCategory
+  );
+
+  // Available years derived from config schedules or fallback 2025-2029
+  const availableYears = useMemo(() => {
+    const yrs = new Set<number>([2026, 2027, 2028, 2029]);
+    config?.availableSchedules?.forEach((s) => {
+      if (s.year) yrs.add(s.year);
+    });
+    return Array.from(yrs).sort((a, b) => a - b);
+  }, [config]);
 
   // Calculation result
   const [result, setResult] = useState<CalculateBillResponse | null>(null);
 
-  // Load sample appliances, default category, and default maintenance fee when config arrives
+  // Initialize default category, sample appliances, and default-selected saving actions once when config loads
   useEffect(() => {
     if (!selectedTariffCategory && tariffCategories.length > 0) {
-      setSelectedTariffCategory(tariffCategories[0].id);
+      setSelectedTariffCategory(
+        config?.defaultSchedule?.categoryId ?? tariffCategories[0].id
+      );
     }
-    if (config?.sampleAppliances && appliances.length === 0) {
-      setAppliances(config.sampleAppliances);
+
+    if (config && !hasInitializedConfigRef.current) {
+      hasInitializedConfigRef.current = true;
+      if (config.sampleAppliances && config.sampleAppliances.length > 0) {
+        setAppliances(config.sampleAppliances);
+      }
+      const defaultIds =
+        config.categories?.flatMap((c) =>
+          c.actionTemplates
+            .filter((t) => t.defaultSelected)
+            .map((t) => t.id)
+        ) || [];
+      setSelectedActions(defaultIds);
     }
-    if (config?.defaultSchedule?.maintenanceFeeKip != null) {
-      setMaintenanceFeeKip(Number(config.defaultSchedule.maintenanceFeeKip));
-    } else if (config?.defaultSchedule?.notice?.maintenanceFeeKip != null) {
-      setMaintenanceFeeKip(Number(config.defaultSchedule.notice.maintenanceFeeKip));
+  }, [config, tariffCategories, selectedTariffCategory]);
+
+  // Auto-sync maintenance fee when switching tariff category / year / month
+  useEffect(() => {
+    if (activeSchedule) {
+      const fee =
+        activeSchedule.maintenanceFeeKip ??
+        activeSchedule.notice?.maintenanceFeeKip ??
+        0;
+      setMaintenanceFeeKip(Number(fee));
+    } else if (config?.defaultSchedule) {
+      const fee =
+        config.defaultSchedule.maintenanceFeeKip ??
+        config.defaultSchedule.notice?.maintenanceFeeKip ??
+        0;
+      setMaintenanceFeeKip(Number(fee));
     }
-  }, [config, appliances.length, tariffCategories, selectedTariffCategory]);
+  }, [activeSchedule, config]);
 
   const handleAddAppliance = () => {
     const firstCat = config?.categories?.[0];
@@ -76,9 +119,9 @@ export function CalculatorSimulatorTab() {
         presetId: firstPreset?.id,
         customName: firstPreset?.nameLa || 'ເຄື່ອງໃຊ້ໄຟຟ້າໃໝ່',
         watt: firstPreset?.defaultWatt || 500,
-        quantity: 1,
-        hoursPerDay: firstPreset?.defaultHoursPerDay || 4,
-        daysPerMonth: 30,
+        quantity: firstPreset?.defaultQuantity || 1,
+        hoursPerDay: Number(firstPreset?.defaultHoursPerDay) || 4,
+        daysPerMonth: firstPreset?.defaultDaysPerMonth || 30,
       },
     ]);
   };
@@ -110,7 +153,9 @@ export function CalculatorSimulatorTab() {
           presetId: firstPreset?.id,
           customName: firstPreset?.nameLa || category?.nameLa || 'ເຄື່ອງໃຊ້ໄຟຟ້າ',
           watt: firstPreset?.defaultWatt || app.watt,
-          hoursPerDay: firstPreset?.defaultHoursPerDay || app.hoursPerDay,
+          quantity: firstPreset?.defaultQuantity || app.quantity,
+          hoursPerDay: Number(firstPreset?.defaultHoursPerDay) || app.hoursPerDay,
+          daysPerMonth: firstPreset?.defaultDaysPerMonth || app.daysPerMonth || 30,
         };
       })
     );
@@ -151,8 +196,12 @@ export function CalculatorSimulatorTab() {
   const handleLoadDefaults = () => {
     if (config?.sampleAppliances) {
       setAppliances(config.sampleAppliances);
-      setSelectedActions([]);
     }
+    const defaultIds =
+      config?.categories?.flatMap((c) =>
+        c.actionTemplates.filter((t) => t.defaultSelected).map((t) => t.id)
+      ) || [];
+    setSelectedActions(defaultIds);
   };
 
   const handleRunCalculation = async () => {
@@ -164,8 +213,7 @@ export function CalculatorSimulatorTab() {
       ...(calcMode === 'direct'
         ? { directMonthlyKwh: Number(directMonthlyKwh) }
         : { appliances }),
-      selectedActionIds:
-        selectedActions.length > 0 ? selectedActions : undefined,
+      selectedActionIds: selectedActions,
     };
 
     try {
@@ -259,7 +307,7 @@ export function CalculatorSimulatorTab() {
               onChange={(e) => setYear(Number(e.target.value))}
               className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/60 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/15"
             >
-              {[2026, 2027, 2028, 2029].map((y) => (
+              {availableYears.map((y) => (
                 <option key={y} value={y}>
                   ປີ {y}
                 </option>
@@ -355,6 +403,9 @@ export function CalculatorSimulatorTab() {
 
             <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
               {appliances.map((app, index) => {
+                const currentCat = config?.categories?.find(
+                  (c) => c.id === app.categoryId
+                );
                 const kwhEstimate = (
                   (app.watt *
                     app.quantity *
@@ -369,7 +420,7 @@ export function CalculatorSimulatorTab() {
                     className="p-3 rounded-2xl border border-slate-200/90 bg-slate-50/50 hover:bg-white transition-all grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center"
                   >
                     {/* Category & Preset */}
-                    <div className="sm:col-span-3">
+                    <div className="sm:col-span-3 space-y-1">
                       <select
                         value={app.categoryId ?? ''}
                         onChange={(e) =>
@@ -383,6 +434,24 @@ export function CalculatorSimulatorTab() {
                           </option>
                         ))}
                       </select>
+                      {currentCat?.presets && currentCat.presets.length > 0 && (
+                        <select
+                          value={app.presetId ?? ''}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handlePresetSelect(index, Number(e.target.value));
+                            }
+                          }}
+                          className="w-full px-2.5 py-1 text-[11px] rounded-lg border border-slate-200/80 bg-slate-50 text-slate-600"
+                        >
+                          <option value="">-- ເລືອກອຸປະກອນຕົ້ນແບບ --</option>
+                          {currentCat.presets.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.nameLa} ({p.defaultWatt}W)
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
                     {/* Name */}
@@ -556,263 +625,326 @@ export function CalculatorSimulatorTab() {
       </div>
 
       {/* Simulation Result Presentation */}
-      {result && (
-        <div className="space-y-5 animate-in fade-in duration-300">
-          {/* KPI Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                ພະລັງງານໄຟຟ້າລວມ
-              </span>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl font-black text-slate-900">
-                  {formatNumber(result.totalMonthlyKwh)}
-                </span>
-                <span className="text-xs font-semibold text-slate-500">kWh</span>
-              </div>
-              <span className="text-[11px] text-slate-400 block mt-1">
-                ຂັ້ນບັນໄດສູງສຸດ: #{result.currentBill?.highestTierOrder}
-              </span>
-            </div>
+      {result && (() => {
+        const totalKwh = result.summary?.totalMonthlyKwh ?? result.currentBill?.totalKwh ?? 0;
+        const afterPlanKwh = result.summary?.afterPlanKwh ?? result.afterPlanBill?.totalKwh ?? 0;
+        const totalSavedKwh = result.summary?.totalSavedKwh ?? 0;
+        const savingPercent = totalKwh > 0 ? Number(((totalSavedKwh / totalKwh) * 100).toFixed(1)) : 0;
+        const afterPlanCostKip = result.summary?.afterPlanCostKip ?? result.afterPlanBill?.totalCostKip ?? 0;
+        const monthlySavedKip = result.summary?.monthlySavedKip ?? 0;
+        const vatRate = Number(result.selectedPeriod?.vatRate ?? 0.1);
+        const vatPercent = Math.round(vatRate * 100);
 
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                ຄ່າໄຟຟ້າກ່ອນປະຢັດ
-              </span>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl font-black text-slate-900">
-                  {formatNumber(result.currentBill?.totalCostKip)}
+        return (
+          <div className="space-y-5 animate-in fade-in duration-300">
+            {/* KPI Summary Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                  ພະລັງງານໄຟຟ້າລວມ
                 </span>
-                <span className="text-xs font-semibold text-slate-500">ກີບ</span>
-              </div>
-              <span className="text-[11px] text-blue-600 font-semibold block mt-1">
-                ລວມ VAT 10%
-              </span>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-emerald-200/80 bg-emerald-50/20 p-4 shadow-2xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
-                ຄ່າໄຟຟ້າຫຼັງແຜນປະຢັດ
-              </span>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl font-black text-emerald-700">
-                  {formatNumber(result.savingPlan?.afterBill?.totalCostKip)}
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-xl sm:text-2xl font-black text-slate-900">
+                    {formatNumber(totalKwh)}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500">kWh</span>
+                </div>
+                <span className="text-[11px] text-slate-400 block mt-1">
+                  ຂັ້ນບັນໄດສູງສຸດ: #{result.currentBill?.highestTierOrder ?? result.summary?.currentTierOrder ?? 1}
                 </span>
-                <span className="text-xs font-semibold text-emerald-600">ກີບ</span>
-              </div>
-              <span className="text-[11px] text-emerald-600 font-semibold block mt-1">
-                ເຫຼືອ {formatNumber(result.savingPlan?.afterPlanKwh)} kWh
-              </span>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-indigo-200/80 bg-indigo-50/20 p-4 shadow-2xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-800 block">
-                ປະຢັດໄດ້ (Saved)
-              </span>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl font-black text-indigo-700">
-                  {formatNumber(result.savingPlan?.estimatedKipSaved)}
-                </span>
-                <span className="text-xs font-semibold text-indigo-600">₭/ເດືອນ</span>
-              </div>
-              <span className="text-[11px] text-indigo-600 font-semibold block mt-1">
-                ຫຼຸດລົງ {result.savingPlan?.savingPercent}% ({result.savingPlan?.totalKwhSaved} kWh)
-              </span>
-            </div>
-          </div>
-
-          {/* 8-Tier Progressive Breakdown Table */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-blue-600" />
-                  ລາຍລະອຽດການຄິດໄລ່ຄ່າໄຟຕາມ 8 ຂັ້ນບັນໄດ (Progressive Tier Breakdown)
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  ອີງຕາມອັດຕາຄ່າໄຟຟ້າປະເພດທີ່ຢູ່ອາໄສ ງວດເດືອນ {result.month}/{result.year}
-                </p>
               </div>
 
-              {result.schedule?.isHotSeason && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
-                  <Sun className="w-3.5 h-3.5 text-amber-600" />
-                  ລະດູຮ້ອນ (Hot Season Discount Applied)
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                  ຄ່າໄຟຟ້າກ່ອນປະຢັດ
                 </span>
-              )}
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-xl sm:text-2xl font-black text-slate-900">
+                    {formatNumber(result.currentBill?.totalCostKip ?? result.summary?.totalCostKip)}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500">ກີບ</span>
+                </div>
+                <span className="text-[11px] text-blue-600 font-semibold block mt-1">
+                  ລວມ VAT {vatPercent}%
+                </span>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-emerald-200/80 bg-emerald-50/20 p-4 shadow-2xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
+                  ຄ່າໄຟຟ້າຫຼັງແຜນປະຢັດ
+                </span>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-xl sm:text-2xl font-black text-emerald-700">
+                    {formatNumber(afterPlanCostKip)}
+                  </span>
+                  <span className="text-xs font-semibold text-emerald-600">ກີບ</span>
+                </div>
+                <span className="text-[11px] text-emerald-600 font-semibold block mt-1">
+                  ເຫຼືອ {formatNumber(afterPlanKwh)} kWh
+                </span>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-indigo-200/80 bg-indigo-50/20 p-4 shadow-2xs">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-800 block">
+                  ປະຢັດໄດ້ (Saved)
+                </span>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-xl sm:text-2xl font-black text-indigo-700">
+                    {formatNumber(monthlySavedKip)}
+                  </span>
+                  <span className="text-xs font-semibold text-indigo-600">₭/ເດືອນ</span>
+                </div>
+                <span className="text-[11px] text-indigo-600 font-semibold block mt-1">
+                  ຫຼຸດລົງ {savingPercent}% ({totalSavedKwh} kWh)
+                </span>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                  <tr>
-                    <th className="py-2.5 px-3 text-center w-14">ຂັ້ນ</th>
-                    <th className="py-2.5 px-3">ຊ່ວງໜ່ວຍໄຟ (kWh)</th>
-                    <th className="py-2.5 px-3 text-right">ອັດຕາ (ກີບ/kWh)</th>
-                    <th className="py-2.5 px-3 text-right">ໜ່ວຍໄຟໃນຂັ້ນ (kWh)</th>
-                    <th className="py-2.5 px-4 text-right">ຄ່າໄຟໃນຂັ້ນ (ກີບ)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {result.currentBill?.tierBreakdown?.map((tier) => (
-                    <tr
-                      key={tier.tierOrder}
-                      className={cn(
-                        'hover:bg-slate-50/70 transition-colors',
-                        tier.kwhInTier > 0 ? 'bg-blue-50/20 font-medium' : 'text-slate-400'
-                      )}
-                    >
-                      <td className="py-2 px-3 text-center font-bold">
-                        #{tier.tierOrder}
-                      </td>
-                      <td className="py-2 px-3">
-                        {tier.label} kWh
-                      </td>
-                      <td className="py-2 px-3 text-right font-mono">
-                        {formatNumber(tier.rateKipPerKwh)}
-                      </td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-800">
-                        {tier.kwhInTier > 0 ? formatNumber(tier.kwhInTier) : '0'}
-                      </td>
-                      <td className="py-2 px-4 text-right font-mono font-bold text-slate-900">
-                        {formatNumber(tier.costKip)}
-                      </td>
+            {/* 8-Tier Progressive Breakdown Table */}
+            <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-blue-600" />
+                    ລາຍລະອຽດການຄິດໄລ່ຄ່າໄຟຕາມຂັ້ນບັນໄດ (Progressive Tier Breakdown)
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    ອີງຕາມອັດຕາ: <strong className="text-slate-700">{result.selectedPeriod?.categoryNameLa || 'ທີ່ຢູ່ອາໄສ'}</strong>
+                    {result.selectedPeriod?.voltageLevel ? ` [${result.selectedPeriod.voltageLevel}]` : ''} • ງວດເດືອນ {result.selectedPeriod?.month}/{result.selectedPeriod?.year} (ປະກາດ {result.selectedPeriod?.noticeNumber})
+                  </p>
+                </div>
+
+                {result.selectedPeriod?.isHotSeason && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                    <Sun className="w-3.5 h-3.5 text-amber-600" />
+                    ລະດູຮ້ອນ (Hot Season Period)
+                  </span>
+                )}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                    <tr>
+                      <th className="py-2.5 px-3 text-center w-14">ຂັ້ນ</th>
+                      <th className="py-2.5 px-3">ຊ່ວງໜ່ວຍໄຟ (kWh)</th>
+                      <th className="py-2.5 px-3 text-right">ອັດຕາ (ກີບ/kWh)</th>
+                      <th className="py-2.5 px-3 text-right">ໜ່ວຍໄຟໃນຂັ້ນ (kWh)</th>
+                      <th className="py-2.5 px-4 text-right">ຄ່າໄຟໃນຂັ້ນ (ກີບ)</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot className="border-t-2 border-slate-300 bg-slate-50/80 font-semibold text-slate-800">
-                  <tr>
-                    <td colSpan={3} className="py-2 px-3 text-right">
-                      ຄ່າໄຟຟ້າພື້ນຖານຕາມຂັ້ນ (Base Energy Cost):
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono font-bold">
-                      {formatNumber(result.currentBill?.totalKwh)} kWh
-                    </td>
-                    <td className="py-2 px-4 text-right font-mono font-bold">
-                      {formatNumber(result.currentBill?.baseCostKip)} ກີບ
-                    </td>
-                  </tr>
-
-                  {result.currentBill?.hotSeasonDiscountKip > 0 && (
-                    <tr className="text-amber-700 bg-amber-50/40">
-                      <td colSpan={4} className="py-2 px-3 text-right">
-                        ສ່ວນຫຼຸດລະດູຮ້ອນ (Hot Season Discount - 300 kWh):
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {result.currentBill?.tierBreakdown?.map((tier) => (
+                      <tr
+                        key={tier.tierOrder}
+                        className={cn(
+                          'hover:bg-slate-50/70 transition-colors',
+                          tier.tierKwh > 0 ? 'bg-blue-50/20 font-medium' : 'text-slate-400'
+                        )}
+                      >
+                        <td className="py-2 px-3 text-center font-bold">
+                          #{tier.tierOrder}
+                        </td>
+                        <td className="py-2 px-3">
+                          {tier.label} kWh
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono">
+                          {formatNumber(tier.rateKipPerKwh)}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-800">
+                          {tier.tierKwh > 0 ? formatNumber(tier.tierKwh) : '0'}
+                        </td>
+                        <td className="py-2 px-4 text-right font-mono font-bold text-slate-900">
+                          {formatNumber(tier.costKip)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="border-t-2 border-slate-300 bg-slate-50/80 font-semibold text-slate-800">
+                    <tr>
+                      <td colSpan={3} className="py-2 px-3 text-right">
+                        ຄ່າໄຟຟ້າພື້ນຖານຕາມຂັ້ນ (Base Energy Cost):
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono font-bold">
+                        {formatNumber(result.currentBill?.totalKwh)} kWh
                       </td>
                       <td className="py-2 px-4 text-right font-mono font-bold">
-                        -{formatNumber(result.currentBill?.hotSeasonDiscountKip)} ກີບ
+                        {formatNumber(result.currentBill?.baseCostKip)} ກີບ
                       </td>
                     </tr>
-                  )}
 
-                  <tr className="text-slate-900 bg-slate-100/50">
-                    <td colSpan={4} className="py-2 px-3 text-right font-bold">
-                      1. ຄ່າໄຟລວມໃນເດືອນ (ຄ່າພະລັງງານໄຟຟ້າ):
-                    </td>
-                    <td className="py-2 px-4 text-right font-mono font-bold text-slate-900">
-                      {formatNumber(result.currentBill?.netBaseCostKip)} ກີບ
-                    </td>
-                  </tr>
+                    {result.currentBill?.hotSeasonDiscountKip > 0 && (
+                      <tr className="text-amber-700 bg-amber-50/40">
+                        <td colSpan={4} className="py-2 px-3 text-right">
+                          ສ່ວນຫຼຸດລະດູຮ້ອນ (Hot Season Discount - 300 kWh):
+                        </td>
+                        <td className="py-2 px-4 text-right font-mono font-bold">
+                          -{formatNumber(result.currentBill?.hotSeasonDiscountKip)} ກີບ
+                        </td>
+                      </tr>
+                    )}
 
-                  <tr className="text-indigo-900 bg-indigo-50/30">
-                    <td colSpan={4} className="py-2 px-3 text-right font-semibold">
-                      2. ຄ່າຊ່ອມບຳລຸງ (ຄ່າບຳລຸງຮັກສາ / Maintenance Fee):
-                    </td>
-                    <td className="py-2 px-4 text-right font-mono font-bold text-indigo-700">
-                      +{formatNumber(result.currentBill?.maintenanceFeeKip ?? maintenanceFeeKip)} ກີບ
-                    </td>
-                  </tr>
+                    <tr className="text-slate-900 bg-slate-100/50">
+                      <td colSpan={4} className="py-2 px-3 text-right font-bold">
+                        1. ຄ່າໄຟລວມໃນເດືອນ (ຄ່າພະລັງງານໄຟຟ້າ):
+                      </td>
+                      <td className="py-2 px-4 text-right font-mono font-bold text-slate-900">
+                        {formatNumber(result.currentBill?.netBaseCostKip)} ກີບ
+                      </td>
+                    </tr>
 
-                  <tr className="text-slate-700 bg-slate-100/30 border-t border-slate-200">
-                    <td colSpan={4} className="py-2 px-3 text-right font-semibold">
-                      ຍອດລວມກ່ອນອາກອນ (ຄ່າໄຟລວມ + ຄ່າຊ່ອມບຳລຸງ):
-                    </td>
-                    <td className="py-2 px-4 text-right font-mono font-bold text-slate-800">
-                      {formatNumber(
-                        result.currentBill?.subtotalBeforeVatKip ??
-                          ((result.currentBill?.netBaseCostKip ?? 0) +
-                            (result.currentBill?.maintenanceFeeKip ?? maintenanceFeeKip))
-                      )}{' '}
-                      ກີບ
-                    </td>
-                  </tr>
+                    <tr className="text-indigo-900 bg-indigo-50/30">
+                      <td colSpan={4} className="py-2 px-3 text-right font-semibold">
+                        2. ຄ່າຊ່ອມບຳລຸງ (ຄ່າບຳລຸງຮັກສາ / Maintenance Fee):
+                      </td>
+                      <td className="py-2 px-4 text-right font-mono font-bold text-indigo-700">
+                        +{formatNumber(result.currentBill?.maintenanceFeeKip ?? maintenanceFeeKip)} ກີບ
+                      </td>
+                    </tr>
 
-                  <tr>
-                    <td colSpan={4} className="py-2 px-3 text-right text-slate-600">
-                      3. ອາກອນມູນຄ່າເພີ່ມ (VAT {Math.round(result.currentBill?.vatRate * 100)}% ຂອງຍອດລວມກ່ອນອາກອນ):
-                    </td>
-                    <td className="py-2 px-4 text-right font-mono font-bold text-slate-700">
-                      +{formatNumber(result.currentBill?.vatCostKip)} ກີບ
-                    </td>
-                  </tr>
+                    <tr className="text-slate-700 bg-slate-100/30 border-t border-slate-200">
+                      <td colSpan={4} className="py-2 px-3 text-right font-semibold">
+                        ຍອດລວມກ່ອນອາກອນ (ຄ່າໄຟລວມ + ຄ່າຊ່ອມບຳລຸງ):
+                      </td>
+                      <td className="py-2 px-4 text-right font-mono font-bold text-slate-800">
+                        {formatNumber(
+                          result.currentBill?.subtotalBeforeVatKip ??
+                            ((result.currentBill?.netBaseCostKip ?? 0) +
+                              (result.currentBill?.maintenanceFeeKip ?? maintenanceFeeKip))
+                        )}{' '}
+                        ກີບ
+                      </td>
+                    </tr>
 
-                  <tr className="text-sm font-black bg-blue-50 text-blue-900 border-t border-blue-200">
-                    <td colSpan={4} className="py-3 px-3 text-right">
-                      ລວມມູນຄ່າໃບບິນທັງໝົດ (Total Monthly Bill):
-                    </td>
-                    <td className="py-3 px-4 text-right font-mono text-base text-blue-950">
-                      {formatNumber(result.currentBill?.totalCostKip)} ກີບ
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                    <tr>
+                      <td colSpan={4} className="py-2 px-3 text-right text-slate-600">
+                        3. ອາກອນມູນຄ່າເພີ່ມ (VAT {vatPercent}% ຂອງຍອດລວມກ່ອນອາກອນ):
+                      </td>
+                      <td className="py-2 px-4 text-right font-mono font-bold text-slate-700">
+                        +{formatNumber(result.currentBill?.vatCostKip)} ກີບ
+                      </td>
+                    </tr>
+
+                    <tr className="text-sm font-black bg-blue-50 text-blue-900 border-t border-blue-200">
+                      <td colSpan={4} className="py-3 px-3 text-right">
+                        ລວມມູນຄ່າໃບບິນທັງໝົດ (Total Monthly Bill):
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono text-base text-blue-950">
+                        {formatNumber(result.currentBill?.totalCostKip)} ກີບ
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
-          </div>
 
-          {/* Multi-Year Outlook (2026–2029) */}
-          {result.yearlyOutlook && result.yearlyOutlook.length > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-              <div>
+            {/* Saving Recommendations Breakdown */}
+            {result.savingRecommendations && result.savingRecommendations.length > 0 && (
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-3">
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4 text-indigo-600" />
-                  ຄາດການແນວໂນ້ມຄ່າໄຟລາຍປີ 2026–2029 (Yearly Outlook Projection)
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  ຜົນການປະເມີນແຜນປະຢັດໄຟຟ້າ ({result.savingRecommendations.length} ມາດຕະການທີ່ກ່ຽວຂ້ອງ)
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  ປຽບທຽບມູນຄ່າຄ່າໄຟຟ້າ ແລະ ເງິນທີ່ປະຢັດໄດ້ໃນແຕ່ລະປີ ຖ້າປະຕິບັດຕາມແຜນປະຢັດໄຟຟ້າ
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {result.yearlyOutlook.map((outlook) => (
-                  <div
-                    key={outlook.year}
-                    className="p-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-900">
-                        ປີ {outlook.year}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-                        {outlook.noticeNumber}
-                      </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {result.savingRecommendations.map((rec) => (
+                    <div
+                      key={rec.templateId}
+                      className={cn(
+                        'p-3 rounded-2xl border text-xs space-y-1',
+                        rec.isDefaultSelected
+                          ? 'bg-emerald-50/40 border-emerald-200'
+                          : 'bg-slate-50/50 border-slate-200/70 opacity-75'
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-slate-900 truncate">{rec.titleLa}</span>
+                        <span
+                          className={cn(
+                            'text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
+                            rec.isDefaultSelected
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-slate-200 text-slate-600'
+                          )}
+                        >
+                          {rec.isDefaultSelected ? 'ນຳໃຊ້ແລ້ວ' : 'ບໍ່ໄດ້ເລືອກ'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1">
+                        <span>ປະຢັດພະລັງງານ:</span>
+                        <span className="font-mono font-bold text-emerald-700">
+                          -{rec.savedKwhPerMonth} kWh/ເດືອນ
+                        </span>
+                      </div>
+                      {rec.isDefaultSelected && (
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>ຄາດຄະເນປະຢັດເງິນ:</span>
+                          <span className="font-mono font-bold text-indigo-700">
+                            ~{formatNumber(rec.savedKipPerMonth)} ₭/ເດືອນ
+                          </span>
+                        </div>
+                      )}
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between text-slate-500">
-                        <span>ກ່ອນປະຢັດ:</span>
-                        <span className="font-mono font-semibold text-slate-800">
-                          {formatNumber(outlook.costBeforeKip)} ₭
+            {/* Multi-Year Outlook (2026–2029) */}
+            {result.yearlyOutlook && result.yearlyOutlook.length > 0 && (
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <TrendingDown className="w-4 h-4 text-indigo-600" />
+                    ຄາດການແນວໂນ້ມຄ່າໄຟລາຍປີ 2026–2029 (Yearly Outlook Projection)
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    ປຽບທຽບມູນຄ່າຄ່າໄຟຟ້າ ແລະ ເງິນທີ່ປະຢັດໄດ້ໃນແຕ່ລະປີ ຖ້າປະຕິບັດຕາມແຜນປະຢັດໄຟຟ້າ
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {result.yearlyOutlook.map((outlook) => (
+                    <div
+                      key={outlook.year}
+                      className="p-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-900">
+                          ປີ {outlook.year}
+                        </span>
+                        <span className="text-[10px] font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                          ເດືອນ {outlook.month}{result.selectedPeriod?.noticeNumber ? ` • ${result.selectedPeriod.noticeNumber}` : ''}
                         </span>
                       </div>
-                      <div className="flex justify-between text-emerald-700">
-                        <span>ຫຼັງປະຢັດ:</span>
-                        <span className="font-mono font-bold">
-                          {formatNumber(outlook.costAfterKip)} ₭
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-indigo-700 pt-1 border-t border-slate-200/60 font-bold">
-                        <span>ປະຢັດຕໍ່ປີ:</span>
-                        <span className="font-mono">
-                          +{formatNumber(outlook.savedPerYearKip)} ₭
-                        </span>
+
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between text-slate-500">
+                          <span>ກ່ອນປະຢັດ:</span>
+                          <span className="font-mono font-semibold text-slate-800">
+                            {formatNumber(outlook.beforeTotalCostKip)} ₭
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-emerald-700">
+                          <span>ຫຼັງປະຢັດ:</span>
+                          <span className="font-mono font-bold">
+                            {formatNumber(outlook.afterTotalCostKip)} ₭
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-indigo-700 pt-1 border-t border-slate-200/60 font-bold">
+                          <span>ປະຢັດຕໍ່ປີ:</span>
+                          <span className="font-mono">
+                            +{formatNumber(outlook.yearlySavedKip)} ₭
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

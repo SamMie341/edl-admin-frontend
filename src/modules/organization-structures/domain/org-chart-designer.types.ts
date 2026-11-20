@@ -1,18 +1,350 @@
+export type OrgChartFontId =
+  | 'noto-sans-lao'
+  | 'phetsarath'
+  | 'noto-lao-looped'
+  | 'noto-serif-lao'
+  | 'saysettha'
+  | 'system-sans';
+
+export interface OrgChartFontOption {
+  id: OrgChartFontId;
+  label: string;
+  sublabel: string;
+  sampleLao: string;
+  cssFamily: string;
+}
+
+export const ORG_CHART_FONT_OPTIONS: OrgChartFontOption[] = [
+  {
+    id: 'noto-sans-lao',
+    label: 'Noto Sans Lao',
+    sublabel: 'ທັນສະໄໝ (ຄ່າເລີ່ມຕົ້ນ)',
+    sampleLao: 'ກຂຄ · EDL',
+    cssFamily:
+      'var(--font-noto-lao), var(--font-noto-sans), "Noto Sans Lao", sans-serif',
+  },
+  {
+    id: 'phetsarath',
+    label: 'Phetsarath (ເພັດສະລາດ)',
+    sublabel: 'ຟ້ອນມາດຕະຖານທາງການລັດ',
+    sampleLao: 'ກຂຄ · EDL',
+    cssFamily:
+      'var(--font-phetsarath), "Phetsarath OT", "Phetsarath", var(--font-noto-serif), "Times New Roman", serif',
+  },
+  {
+    id: 'noto-lao-looped',
+    label: 'Noto Lao Looped',
+    sublabel: 'ຕົວມີຫົວ ອ່ານງ່າຍສະບາຍຕາ',
+    sampleLao: 'ກຂຄ · EDL',
+    cssFamily:
+      'var(--font-noto-lao-looped), var(--font-noto-sans), "Noto Sans Lao Looped", sans-serif',
+  },
+  {
+    id: 'noto-serif-lao',
+    label: 'Noto Serif Lao',
+    sublabel: 'ຕົວຫຼູຫຼາ ເໝາະກັບຫົວຂໍ້ທາງການ',
+    sampleLao: 'ກຂຄ · EDL',
+    cssFamily:
+      'var(--font-noto-serif-lao), var(--font-noto-serif), "Noto Serif Lao", Georgia, serif',
+  },
+  {
+    id: 'saysettha',
+    label: 'Saysettha OT (ໄຊເສດຖາ)',
+    sublabel: 'ຟ້ອນໄຊເສດຖາລະບົບ',
+    sampleLao: 'ກຂຄ · EDL',
+    cssFamily:
+      '"Saysettha OT", "Saysettha Web", var(--font-phetsarath), "Phetsarath OT", sans-serif',
+  },
+  {
+    id: 'system-sans',
+    label: 'System / Leelawadee',
+    sublabel: 'ຟ້ອນພື້ນຖານຂອງເຄື່ອງ',
+    sampleLao: 'ກຂຄ · EDL',
+    cssFamily:
+      '"Leelawadee UI", "DokChampa", system-ui, -apple-system, sans-serif',
+  },
+];
+
+export function resolveOrgChartCssFont(fontId?: string): string {
+  const found = ORG_CHART_FONT_OPTIONS.find((f) => f.id === fontId);
+  return found ? found.cssFamily : ORG_CHART_FONT_OPTIONS[0].cssFamily;
+}
+
+const LATIN_RUN_REGEX =
+  /([A-Za-z][A-Za-z0-9.,'&\-+]*(?:[ ]+(?:\/[ ]+)?[A-Za-z0-9.,'&\-+]+)*)/g;
+
+/**
+ * Splits mixed Lao/English text into script runs so English/Latin phrases can
+ * render at a balanced optical scale without touching Lao numerals or spacing.
+ */
+export function splitTextByScript(
+  text: string
+): Array<{ text: string; isLatin: boolean }> {
+  if (!text) return [];
+  const runs: Array<{ text: string; isLatin: boolean }> = [];
+  let lastIdx = 0;
+
+  for (const match of text.matchAll(LATIN_RUN_REGEX)) {
+    const start = match.index ?? 0;
+    if (start > lastIdx) {
+      runs.push({ text: text.slice(lastIdx, start), isLatin: false });
+    }
+    runs.push({ text: match[0], isLatin: true });
+    lastIdx = start + match[0].length;
+  }
+
+  if (lastIdx < text.length) {
+    runs.push({ text: text.slice(lastIdx), isLatin: false });
+  }
+  return runs;
+}
+
+export type OrgChartFontWeight = 400 | 500 | 600 | 700 | 800;
+
+export const ORG_CHART_FONT_WEIGHT_OPTIONS: Array<{
+  value: OrgChartFontWeight;
+  label: string;
+}> = [
+  { value: 400, label: 'ປົກກະຕິ (400)' },
+  { value: 500, label: 'ປານກາງ (500)' },
+  { value: 600, label: 'ກາງ-ເຂັ້ມ (600)' },
+  { value: 700, label: 'ຕົວເຂັ້ມ (700)' },
+  { value: 800, label: 'ເຂັ້ມພິເສດ (800)' },
+];
+
+export interface OrgChartNodeFontOverride {
+  fontFamily?: OrgChartFontId;
+  badgeNoAutoWrap?: boolean;
+  badgeFontSize?: number;
+  nameLaoSize?: number;
+  nameEnSize?: number;
+  roleLaoSize?: number;
+  roleEnSize?: number;
+  badgeWeight?: OrgChartFontWeight;
+  nameLaoWeight?: OrgChartFontWeight;
+  nameEnWeight?: OrgChartFontWeight;
+  roleLaoWeight?: OrgChartFontWeight;
+  roleEnWeight?: OrgChartFontWeight;
+}
+
+export interface OrgChartStyleConfig {
+  fontFamily: OrgChartFontId;
+  maxColumnsPerRow: number; // 0 = single row (no wrap), >= 1 = wrap after N cards
+  badgeNoAutoWrap: boolean; // true = preserve only explicit Enter line breaks in badge pills
+  cardWidth: number;
+  photoHeight: number;
+  cardGap: number;
+  tierGap: number;
+  cardRadius: number;
+  headerTitleLaoSize: number;
+  headerTitleEnSize: number;
+  badgeFontSize: number;
+  badgeEnScale: number; // Optical ratio for Latin text inside badge pills (e.g. 0.8 = 80%)
+  nameLaoSize: number;
+  nameEnSize: number;
+  roleLaoSize: number;
+  roleEnSize: number;
+  badgeWeight: OrgChartFontWeight;
+  nameLaoWeight: OrgChartFontWeight;
+  nameEnWeight: OrgChartFontWeight;
+  roleLaoWeight: OrgChartFontWeight;
+  roleEnWeight: OrgChartFontWeight;
+  headerBorderColor: string;
+  badgeBorderColor: string;
+  leaderBorderColor: string;
+  memberBorderColor: string;
+  primaryTextColor: string;
+  secondaryTextColor: string;
+  lineColor: string;
+  backgroundColor: string;
+}
+
+export const DEFAULT_ORG_CHART_STYLE: OrgChartStyleConfig = {
+  fontFamily: 'noto-sans-lao',
+  maxColumnsPerRow: 0,
+  badgeNoAutoWrap: false,
+  cardWidth: 220,
+  photoHeight: 156,
+  cardGap: 24,
+  tierGap: 56,
+  cardRadius: 16,
+  headerTitleLaoSize: 22,
+  headerTitleEnSize: 12,
+  badgeFontSize: 10,
+  badgeEnScale: 0.8,
+  nameLaoSize: 12,
+  nameEnSize: 9.5,
+  roleLaoSize: 12.5,
+  roleEnSize: 10,
+  badgeWeight: 700,
+  nameLaoWeight: 700,
+  nameEnWeight: 700,
+  roleLaoWeight: 700,
+  roleEnWeight: 400,
+  headerBorderColor: '#1e3a8a',
+  badgeBorderColor: '#93c5fd',
+  leaderBorderColor: '#f59e0b',
+  memberBorderColor: '#fbbf24',
+  primaryTextColor: '#1e3a8a',
+  secondaryTextColor: '#475569',
+  lineColor: '#94a3b8',
+  backgroundColor: '#ffffff',
+};
+
+export const ORG_CHART_SIZE_PRESETS: Record<
+  'compact' | 'standard' | 'large',
+  { label: string; values: Partial<OrgChartStyleConfig> }
+> = {
+  compact: {
+    label: 'ນ້ອຍ (S)',
+    values: {
+      cardWidth: 188,
+      photoHeight: 136,
+      cardGap: 16,
+      tierGap: 44,
+      headerTitleLaoSize: 18,
+      headerTitleEnSize: 10.5,
+      badgeFontSize: 9,
+      nameLaoSize: 11,
+      nameEnSize: 8.5,
+      roleLaoSize: 11,
+      roleEnSize: 9,
+    },
+  },
+  standard: {
+    label: 'ກາງ (M)',
+    values: {
+      cardWidth: 220,
+      photoHeight: 156,
+      cardGap: 24,
+      tierGap: 56,
+      headerTitleLaoSize: 22,
+      headerTitleEnSize: 12,
+      badgeFontSize: 10,
+      nameLaoSize: 12,
+      nameEnSize: 9.5,
+      roleLaoSize: 12.5,
+      roleEnSize: 10,
+    },
+  },
+  large: {
+    label: 'ໃຫຍ່ (L)',
+    values: {
+      cardWidth: 260,
+      photoHeight: 190,
+      cardGap: 28,
+      tierGap: 68,
+      headerTitleLaoSize: 26,
+      headerTitleEnSize: 14,
+      badgeFontSize: 11.5,
+      nameLaoSize: 14,
+      nameEnSize: 11,
+      roleLaoSize: 14.5,
+      roleEnSize: 11.5,
+    },
+  },
+};
+
+export const ORG_CHART_COLOR_THEMES: Array<{
+  id: string;
+  label: string;
+  values: Partial<OrgChartStyleConfig>;
+}> = [
+  {
+    id: 'edl-royal',
+    label: 'ຟ້າ-ທອງ ຟຟລ',
+    values: {
+      headerBorderColor: '#1e3a8a',
+      badgeBorderColor: '#93c5fd',
+      leaderBorderColor: '#f59e0b',
+      memberBorderColor: '#fbbf24',
+      primaryTextColor: '#1e3a8a',
+      secondaryTextColor: '#475569',
+      lineColor: '#94a3b8',
+      backgroundColor: '#ffffff',
+    },
+  },
+  {
+    id: 'emerald-gold',
+    label: 'ຂຽວ-ທອງ',
+    values: {
+      headerBorderColor: '#065f46',
+      badgeBorderColor: '#6ee7b7',
+      leaderBorderColor: '#d97706',
+      memberBorderColor: '#fbbf24',
+      primaryTextColor: '#064e3b',
+      secondaryTextColor: '#475569',
+      lineColor: '#94a3b8',
+      backgroundColor: '#ffffff',
+    },
+  },
+  {
+    id: 'slate-classic',
+    label: 'ເທົາເຂັ້ມ-ນ້ຳເງິນ',
+    values: {
+      headerBorderColor: '#0f172a',
+      badgeBorderColor: '#cbd5e1',
+      leaderBorderColor: '#1d4ed8',
+      memberBorderColor: '#60a5fa',
+      primaryTextColor: '#0f172a',
+      secondaryTextColor: '#475569',
+      lineColor: '#94a3b8',
+      backgroundColor: '#f8fafc',
+    },
+  },
+];
+
+export function resolveOrgChartStyle(
+  style?: Partial<OrgChartStyleConfig> | null
+): OrgChartStyleConfig {
+  return {
+    ...DEFAULT_ORG_CHART_STYLE,
+    ...(style ?? {}),
+  };
+}
+
 export interface OrgChartPersonNode {
   id: string;
+  nodeType?: 'person' | 'badge'; // 'badge' renders badge pill only (no photo/name card)
   nameLao: string;
   nameEn: string;
   roleLao: string;
   roleEn: string;
   departmentBadge?: string;
   photoUrl?: string; // Data URL or Image URL
+  fontOverride?: OrgChartNodeFontOverride;
 }
 
 export interface OrgChartTier {
   id: string;
   tierTitleLao?: string;
   tierTitleEn?: string;
+  maxColumns?: number; // undefined = follow style.maxColumnsPerRow, 0 = 1 row, >= 1 = cards per row
   nodes: OrgChartPersonNode[];
+}
+
+export function resolveTierMaxColumns(
+  tier: Pick<OrgChartTier, 'maxColumns'>,
+  defaultMaxColumnsPerRow?: number
+): number {
+  if (typeof tier.maxColumns === 'number' && tier.maxColumns >= 0) {
+    return tier.maxColumns;
+  }
+  return defaultMaxColumnsPerRow && defaultMaxColumnsPerRow > 0
+    ? defaultMaxColumnsPerRow
+    : 0;
+}
+
+export function chunkTierNodes<T>(nodes: T[], maxColumns: number): T[][] {
+  if (nodes.length === 0) return [];
+  if (!maxColumns || maxColumns <= 0 || nodes.length <= maxColumns) {
+    return [nodes];
+  }
+  const rows: T[][] = [];
+  for (let i = 0; i < nodes.length; i += maxColumns) {
+    rows.push(nodes.slice(i, i + maxColumns));
+  }
+  return rows;
 }
 
 export interface OrgChartStructure {
@@ -22,6 +354,7 @@ export interface OrgChartStructure {
   tiers?: OrgChartTier[];
   leader?: OrgChartPersonNode;
   members?: OrgChartPersonNode[];
+  style?: Partial<OrgChartStyleConfig>;
 }
 
 export function normalizeChartTiers(chart: Partial<OrgChartStructure>): OrgChartTier[] {

@@ -14,6 +14,7 @@ import {
   FolderKanban,
   Tags,
   Video,
+  Pin,
 } from 'lucide-react';
 import {
   DataTable,
@@ -42,6 +43,7 @@ export function NewsView() {
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined);
   const [selectedStatus, setSelectedStatus] = useState<NewsStatus | 'ALL'>('ALL');
+  const [pinnedFilter, setPinnedFilter] = useState<'ALL' | 'PINNED' | 'UNPINNED'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Pagination
@@ -61,6 +63,12 @@ export function NewsView() {
     limit,
     categoryId: selectedCategoryId,
     status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
+    isPinned:
+      pinnedFilter === 'PINNED'
+        ? true
+        : pinnedFilter === 'UNPINNED'
+        ? false
+        : undefined,
   });
 
   const deleteMutation = useDeleteNews();
@@ -100,9 +108,15 @@ export function NewsView() {
       if (selectedStatus !== 'ALL' && item.status !== selectedStatus) {
         return false;
       }
+      if (pinnedFilter === 'PINNED' && !item.isPinned) {
+        return false;
+      }
+      if (pinnedFilter === 'UNPINNED' && item.isPinned) {
+        return false;
+      }
       return true;
     });
-  }, [rawItems, selectedCategoryId, selectedStatus]);
+  }, [rawItems, selectedCategoryId, selectedStatus, pinnedFilter]);
 
   const columns: ColumnDef<NewsItem>[] = [
     {
@@ -133,9 +147,20 @@ export function NewsView() {
       header: 'ຫົວຂໍ້ຂ່າວສານ & ເນື້ອໃນຫຍໍ້',
       cell: (row) => (
         <div className="space-y-1 max-w-[340px]">
-          <p className="font-bold text-slate-800 text-xs line-clamp-1">
-            {row.titleLa}
-          </p>
+          <div className="flex items-center gap-1.5">
+            {row.isPinned && (
+              <span
+                title="ປັກໝຸດຂ່າວເດັ່ນ"
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/80 text-[10px] font-bold shrink-0"
+              >
+                <Pin className="h-2.5 w-2.5" />
+                <span>ປັກໝຸດ</span>
+              </span>
+            )}
+            <p className="font-bold text-slate-800 text-xs line-clamp-1">
+              {row.titleLa}
+            </p>
+          </div>
           {row.titleEn && (
             <p className="text-[11px] text-slate-400 font-normal line-clamp-1 italic">
               {row.titleEn}
@@ -296,8 +321,21 @@ export function NewsView() {
           ))}
         </div>
 
-        {/* Status Filter */}
-        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+        {/* Status & Pinned Filters */}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
+          <select
+            value={pinnedFilter}
+            onChange={(e) => {
+              setPinnedFilter(e.target.value as 'ALL' | 'PINNED' | 'UNPINNED');
+              setPage(1);
+            }}
+            className="w-full sm:w-40 h-9 px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 cursor-pointer"
+          >
+            <option value="ALL">ທຸກຂ່າວ (Pinned & All)</option>
+            <option value="PINNED">ສະເພາະປັກໝຸດ (Pinned)</option>
+            <option value="UNPINNED">ຂ່າວທົ່ວໄປ (Unpinned)</option>
+          </select>
+
           <select
             value={selectedStatus}
             onChange={(e) => {

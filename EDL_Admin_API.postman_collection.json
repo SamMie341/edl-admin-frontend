@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "e4d1a001-ed1a-4d1a-8000-000000000001",
     "name": "EDL Admin Management System API",
-    "description": "Postman Collection ສຳລັບທົດສອບລະບົບ EDL Admin Backend API (NestJS Clean Architecture)\n\n### ຄຸນສົມບັດຫຼັກ:\n- ຮອງຮັບທຸກ Module: Auth, Users, Departments, Branches, Service Centers, Provinces, Districts, Villages, Organization Structures, Vision & Missions, Electrical Knowledge, Magazines, News Categories, News, News Tags, Legislations, Electricity Tariffs, Procurements, Positions, Job Postings, Roles, Electricity Calculator (ລວມ 22 Modules, 153 Endpoints)\n- ລະບົບ Auto JWT: ເມື່ອ Login ສຳເລັດ ລະບົບຈະບັນທຶກ `accessToken` ລົງ Collection Variables ອັດຕະໂນມັດ ເພື່ອໃຊ້ກັບ Endpoint ອື່ນໆໄດ້ທັນທີ\n- URL Prefix: `http://localhost:3000/api/v1` (ປັບປ່ຽນໄດ້ຜ່ານຕົວປ່ຽນ `baseUrl`)",
+    "description": "Postman Collection ສຳລັບທົດສອບລະບົບ EDL Admin Backend API (NestJS Clean Architecture)\n\n### ຄຸນສົມບັດຫຼັກ:\n- ຮອງຮັບທຸກ Module: Auth, Users, Departments, Branches, Service Centers, Provinces, Districts, Villages, Organization Structures, Vision & Missions, Electrical Knowledge, Magazines, News Categories, News, News Tags, Legislations, Electricity Tariffs, Procurements, Positions, Job Postings, Roles, Electricity Calculator, Carousels (ລວມ 23 Modules, 158 Endpoints)\n- ລະບົບ Auto JWT: ເມື່ອ Login ສຳເລັດ ລະບົບຈະບັນທຶກ `accessToken` ລົງ Collection Variables ອັດຕະໂນມັດ ເພື່ອໃຊ້ກັບ Endpoint ອື່ນໆໄດ້ທັນທີ\n- URL Prefix: `http://localhost:3000/api/v1` (ປັບປ່ຽນໄດ້ຜ່ານຕົວປ່ຽນ `baseUrl`)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -4140,7 +4140,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"nameLa\": \"ເຄື່ອງສາກລົດໄຟຟ້າ (EV Charger)\",\n  \"nameEn\": \"EV Home Charger\",\n  \"iconName\": \"Zap\",\n  \"orderIndex\": 11,\n  \"status\": \"ACTIVE\"\n}"
+                  "raw": "{\n  \"nameLa\": \"ເຄື່ອງສາກລົດໄຟຟ້າ (EV Charger)\",\n  \"nameEn\": \"EV Home Charger\",\n  \"orderIndex\": 11,\n  \"status\": \"ACTIVE\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/electricity-calculator/categories",
@@ -4628,6 +4628,177 @@
               "response": []
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "23. Carousels (ລະບົບຈັດການຮູບພາບສະໄລ້ໜ້າເວັບ)",
+      "description": "ໂມດູນຄຸ້ມຄອງຮູບພາບສະໄລ້ (Carousels / Banners) ໜ້າຫຼັກຂອງເວັບໄຊ, ຮອງຮັບການອັບໂຫຼດຮູບພາບ, ຈັດລຳດັບການສະແດງຜົນ ແລະ ສະຖານະ (5 Endpoints)",
+      "item": [
+        {
+          "name": "Public: Get All Carousels (ດຶງລາຍການສະໄລ້ທັງໝົດ)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carousels?status=ACTIVE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carousels"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "description": "Filter ຕາມສະຖານະ: ACTIVE ຫຼື INACTIVE (ຖ້າບໍ່ໃສ່ຈະດຶງທັງໝົດ)"
+                }
+              ]
+            },
+            "description": "ດຶງລາຍການຮູບພາບສະໄລ້ໜ້າເວັບທັງໝົດ (Public Endpoint - ຮອງຮັບ Query Param ?status=ACTIVE)"
+          },
+          "response": []
+        },
+        {
+          "name": "Public: Get Carousel By ID (ດຶງຮູບສະໄລ້ຕາມ ID)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carousels/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carousels",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ລະຫັດ Carousel ID"
+                }
+              ]
+            },
+            "description": "ດຶງຂໍ້ມູນຮູບພາບສະໄລ້ຕາມ ID (Public Endpoint)"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Create Carousel (ເພີ່ມຮູບສະໄລ້ໃໝ່ ພ້ອມອັບໂຫຼດ)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "ເລືອກໄຟລ໌ຮູບພາບ (JPG, PNG, WEBP)"
+                },
+                {
+                  "key": "orderIndex",
+                  "value": "1",
+                  "type": "text",
+                  "description": "ລຳດັບການສະແດງຜົນ (Integer)"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "type": "text",
+                  "description": "ສະຖານະ (ACTIVE / INACTIVE)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/carousels",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carousels"
+              ]
+            },
+            "description": "ເພີ່ມຮູບພາບສະໄລ້ໜ້າເວັບໃໝ່ (ຕ້ອງມີສິດ CAROUSELS:CREATE ຜ່ານ multipart/form-data)"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Update Carousel (ແກ້ໄຂສະໄລ້ / ປ່ຽນຮູບໃໝ່)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "ເລືອກໄຟລ໌ຮູບໃໝ່ປ່ຽນແທນ (Optional)"
+                },
+                {
+                  "key": "orderIndex",
+                  "value": "1",
+                  "type": "text",
+                  "description": "ລຳດັບການສະແດງຜົນ (Integer)"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "type": "text",
+                  "description": "ສະຖານະ (ACTIVE / INACTIVE)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/carousels/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carousels",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ລະຫັດ Carousel ID ທີ່ຕ້ອງການແກ້ໄຂ"
+                }
+              ]
+            },
+            "description": "ແກ້ໄຂຂໍ້ມູນຮູບພາບສະໄລ້ ຫຼື ອັບໂຫຼດຮູບໃໝ່ປ່ຽນແທນ (ຕ້ອງມີສິດ CAROUSELS:UPDATE)"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Delete Carousel (ລຶບຮູບສະໄລ້)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carousels/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carousels",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ລະຫັດ Carousel ID ທີ່ຕ້ອງການລຶບ"
+                }
+              ]
+            },
+            "description": "ລຶບຮູບພາບສະໄລ້ອອກຈາກລະບົບ ແລະ ລຶບໄຟລ໌ຮູບພາບຕົວຈິງ (ຕ້ອງມີສິດ CAROUSELS:DELETE)"
+          },
+          "response": []
         }
       ]
     }

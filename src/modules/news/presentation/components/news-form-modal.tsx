@@ -13,6 +13,7 @@ import {
   FolderKanban,
   Tags,
   CheckCircle2,
+  Pin,
 } from 'lucide-react';
 import {
   FormModal,
@@ -75,6 +76,7 @@ export function NewsFormModal({ isOpen, onClose, news }: NewsFormModalProps) {
   // Settings
   const [status, setStatus] = useState<NewsStatus>('DRAFT');
   const [publishedAt, setPublishedAt] = useState('');
+  const [isPinned, setIsPinned] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -104,6 +106,7 @@ export function NewsFormModal({ isOpen, onClose, news }: NewsFormModalProps) {
       setPublishedAt(
         news.publishedAt ? new Date(news.publishedAt).toISOString().slice(0, 16) : ''
       );
+      setIsPinned(Boolean(news.isPinned));
     } else {
       setCategoryId(categories[0]?.id || '');
       setSelectedTagIds([]);
@@ -123,6 +126,7 @@ export function NewsFormModal({ isOpen, onClose, news }: NewsFormModalProps) {
 
       setStatus('DRAFT');
       setPublishedAt(new Date().toISOString().slice(0, 16));
+      setIsPinned(false);
     }
     setActiveTab('lao');
     setErrors({});
@@ -178,6 +182,7 @@ export function NewsFormModal({ isOpen, onClose, news }: NewsFormModalProps) {
         videoUrl: videoUrl.trim() || undefined,
         status,
         publishedAt: publishedAt ? new Date(publishedAt).toISOString() : undefined,
+        isPinned,
         tagIds: selectedTagIds,
         galleryImages: existingGalleryUrls,
       };
@@ -569,6 +574,45 @@ export function NewsFormModal({ isOpen, onClose, news }: NewsFormModalProps) {
                   onChange={(e) => setPublishedAt(e.target.value)}
                   className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500"
                 />
+              </div>
+
+              {/* Pin News Toggle */}
+              <div className="sm:col-span-2">
+                <label
+                  className={cn(
+                    'flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition cursor-pointer select-none',
+                    isPinned
+                      ? 'bg-amber-50/70 border-amber-300 text-amber-900'
+                      : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:bg-slate-100/70'
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition',
+                        isPinned
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-white border border-slate-200 text-slate-400'
+                      )}
+                    >
+                      <Pin className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold">
+                        ປັກໝຸດຂ່າວເດັ່ນ (Pin to Top)
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        ສະແດງຂ່າວສານນີ້ໄວ້ອັນດັບຕົ້ນໆໃນໜ້າຂ່າວສານສຳຄັນ
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isPinned}
+                    onChange={(e) => setIsPinned(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                </label>
               </div>
             </div>
 

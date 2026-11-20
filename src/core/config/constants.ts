@@ -30,7 +30,7 @@ export const API_ENDPOINTS = {
     BY_DEPARTMENT: (deptId: number) => `/branches/department/${deptId}`,
     BY_ID: (id: number) => `/branches/${id}`,
     SYNC: '/branches/sync',
-    UPLOAD_IMAGE: (id: number, imageType: 'branch' | 'cover' | 'structure') =>
+    UPLOAD_IMAGE: (id: number, imageType: 'branchImage' | 'coverImage' | 'orgChartImage') =>
       `/branches/${id}/upload/${imageType}`,
   },
   SERVICE_CENTERS: {
@@ -117,7 +117,7 @@ export const API_ENDPOINTS = {
   JOB_POSTINGS: {
     BASE: '/job-postings',
     BY_ID: (id: number) => `/job-postings/${id}`,
-    UPLOAD_DOCUMENT: (id: number) => `/job-postings/${id}/upload/document`,
+    UPLOAD_IMAGE: (id: number) => `/job-postings/${id}/upload/image`,
   },
   ELECTRICITY_CALCULATOR: {
     CONFIG: '/electricity-calculator/config',

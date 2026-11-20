@@ -10,6 +10,8 @@ import {
   Sparkles,
   Layers,
   CheckCircle2,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FileUploader } from '@/core/presentation/components/shared';
@@ -75,6 +77,7 @@ export function OrgStructureEditorPage({
     DEFAULT_EDL_BOARD_PRESET
   );
   const [isExporting, setIsExporting] = useState(false);
+  const [showMetaBar, setShowMetaBar] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -151,6 +154,9 @@ export function OrgStructureEditorPage({
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      if (newErrors.structureName) {
+        setShowMetaBar(true);
+      }
       return;
     }
 
@@ -235,9 +241,9 @@ export function OrgStructureEditorPage({
     isExporting;
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-90px)] md:h-[calc(100vh-130px)] space-y-3 animate-in fade-in-50 duration-200">
+    <div className="-m-2.5 sm:-m-4 lg:-m-6 flex flex-col min-h-[calc(100dvh-76px)] sm:min-h-[calc(100dvh-96px)] lg:h-[calc(100dvh-96px)] space-y-2">
       {/* 1. Top Navigation & Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 sm:px-6 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 sm:p-3 sm:px-5 bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
           <Button
             type="button"
@@ -301,6 +307,29 @@ export function OrgStructureEditorPage({
               type="button"
               variant="outline"
               size="sm"
+              onClick={() => setShowMetaBar((v) => !v)}
+              className={cn(
+                'h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl text-xs border-slate-200 gap-1 cursor-pointer',
+                showMetaBar
+                  ? 'text-slate-600 hover:bg-slate-100'
+                  : 'bg-blue-50 text-blue-700 border-blue-200 font-semibold'
+              )}
+              title={showMetaBar ? 'ເຊື່ອງແຖບຂໍ້ມູນເພື່ອຂະຫຍາຍພື້ນທີ່' : 'ສະແດງແຖບຂໍ້ມູນໂຄງຮ່າງ'}
+            >
+              {showMetaBar ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden md:inline">
+                {showMetaBar ? 'ເຊື່ອງຂໍ້ມູນ' : 'ຂໍ້ມູນໂຄງຮ່າງ'}
+              </span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               onClick={onBack}
               disabled={isSubmitting}
               className="h-8 sm:h-9 px-3 sm:px-4 rounded-xl text-xs text-slate-600 border-slate-200 hover:bg-slate-100 cursor-pointer"
@@ -333,8 +362,9 @@ export function OrgStructureEditorPage({
         </div>
       </div>
 
-      {/* 2. Metadata Settings Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-3 bg-white p-3 sm:p-3.5 sm:px-6 rounded-2xl border border-slate-200/80 shadow-2xs shrink-0 text-xs">
+      {/* 2. Collapsible Metadata Settings Bar */}
+      {showMetaBar && (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-3 bg-white p-2.5 sm:p-3 sm:px-5 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs shrink-0 text-xs">
         {/* Structure Type */}
         <div className="md:col-span-3 space-y-1">
           <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
@@ -397,10 +427,11 @@ export function OrgStructureEditorPage({
             </select>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* 3. Full-Screen Canvas Area */}
-      <div className="flex-1 min-h-[420px] md:min-h-0 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
+      <div className="flex-1 min-h-[560px] lg:min-h-0 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
         {mode === 'designer' ? (
           <OrgChartDesigner
             structure={chartStructure}

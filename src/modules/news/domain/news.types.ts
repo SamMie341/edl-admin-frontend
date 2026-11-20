@@ -46,6 +46,7 @@ export interface NewsItem {
   contentEn?: string | null;
   viewCount: number;
   publishedAt?: string | null;
+  isPinned?: boolean;
   status: NewsStatus;
   createdAt: string;
   updatedAt: string;
@@ -66,6 +67,7 @@ export interface CreateNewsPayload {
   contentLa: string;
   contentEn?: string;
   publishedAt?: string;
+  isPinned?: boolean;
   status?: NewsStatus;
   tagIds?: number[];
 }
@@ -93,4 +95,5 @@ export interface NewsQueryParams {
   limit?: number;
   categoryId?: number;
   status?: NewsStatus;
+  isPinned?: boolean;
 }

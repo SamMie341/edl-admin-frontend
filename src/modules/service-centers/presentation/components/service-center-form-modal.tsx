@@ -102,6 +102,8 @@ export function ServiceCenterFormModal({
   const handleSubmit = async () => {
     const newErrors: Record<string, string> = {};
     if (!centerName.trim()) newErrors.centerName = 'ກະລຸນາປ້ອນຊື່ສູນບໍລິການ';
+    if (!departmentId) newErrors.departmentId = 'ກະລຸນາເລືອກຝ່າຍຕົ້ນສັງກັດ';
+    if (!branchId) newErrors.branchId = 'ກະລຸນາເລືອກສາຂາຕົ້ນສັງກັດ';
     if (!provinceId) newErrors.provinceId = 'ກະລຸນາເລືອກແຂວງ';
     if (!districtId) newErrors.districtId = 'ກະລຸນາເລືອກເມືອງ';
     if (!villageId) newErrors.villageId = 'ກະລຸນາເລືອກບ້ານ';
@@ -126,8 +128,8 @@ export function ServiceCenterFormModal({
 
       const payload = {
         centerName: centerName.trim(),
-        departmentId: departmentId ? Number(departmentId) : undefined,
-        branchId: branchId ? Number(branchId) : undefined,
+        departmentId: Number(departmentId),
+        branchId: Number(branchId),
         provinceId: Number(provinceId),
         districtId: Number(districtId),
         villageId: Number(villageId),
@@ -208,11 +210,14 @@ export function ServiceCenterFormModal({
             {/* Department */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                ຝ່າຍຕົ້ນສັງກັດ
+                ຝ່າຍຕົ້ນສັງກັດ <span className="text-rose-500">*</span>
               </label>
               <select
                 value={departmentId}
-                onChange={(e) => setDepartmentId(Number(e.target.value))}
+                onChange={(e) => {
+                  setDepartmentId(e.target.value ? Number(e.target.value) : '');
+                  if (errors.departmentId) setErrors((prev) => ({ ...prev, departmentId: '' }));
+                }}
                 className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 cursor-pointer"
               >
                 <option value="">-- ເລືອກຝ່າຍ --</option>
@@ -222,16 +227,22 @@ export function ServiceCenterFormModal({
                   </option>
                 ))}
               </select>
+              {errors.departmentId && (
+                <p className="text-xs font-medium text-rose-500">{errors.departmentId}</p>
+              )}
             </div>
 
             {/* Branch */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                ສາຂາຕົ້ນສັງກັດ
+                ສາຂາຕົ້ນສັງກັດ <span className="text-rose-500">*</span>
               </label>
               <select
                 value={branchId}
-                onChange={(e) => setBranchId(Number(e.target.value))}
+                onChange={(e) => {
+                  setBranchId(e.target.value ? Number(e.target.value) : '');
+                  if (errors.branchId) setErrors((prev) => ({ ...prev, branchId: '' }));
+                }}
                 className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 cursor-pointer"
               >
                 <option value="">-- ເລືອກສາຂາ --</option>
@@ -241,6 +252,9 @@ export function ServiceCenterFormModal({
                   </option>
                 ))}
               </select>
+              {errors.branchId && (
+                <p className="text-xs font-medium text-rose-500">{errors.branchId}</p>
+              )}
             </div>
 
             {/* Phone */}
